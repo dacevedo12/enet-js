@@ -1,0 +1,38 @@
+{
+  "env": {
+    "node": true,
+    "es6": true
+  },
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "sourceType": "module",
+    "project": "./tsconfig.json"
+  },
+  "plugins": ["@typescript-eslint", "fp", "import", "prettier"],
+  "extends": [
+    "eslint:all",
+    "plugin:@typescript-eslint/all",
+    "plugin:fp/recommended",
+    "plugin:import/recommended",
+    "plugin:import/typescript",
+    "plugin:prettier/recommended",
+    "prettier/@typescript-eslint"
+  ],
+  "rules": {
+    "@typescript-eslint/no-magic-numbers": [
+      "error",
+      {
+        "ignore": [-1, 0, 1, 2, 4],
+        "ignoreEnums": true
+      }
+    ],
+    "@typescript-eslint/prefer-readonly-parameter-types": "off",
+    "camelcase": ["error", { "ignoreImports": true }],
+    "fp/no-nil": "off",
+    "fp/no-throw": "off",
+    "fp/no-unused-expression": "off",
+    "max-params": "off",
+    "new-cap": "off",
+    "one-var": ["error", "never"]
+  }
+}
