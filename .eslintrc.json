@@ -8,7 +8,7 @@
     "sourceType": "module",
     "project": "./tsconfig.json"
   },
-  "plugins": ["@typescript-eslint", "fp", "import", "prettier"],
+  "plugins": ["@typescript-eslint", "fp", "import", "prettier", "sort-exports"],
   "extends": [
     "eslint:all",
     "plugin:@typescript-eslint/all",
@@ -19,6 +19,10 @@
     "prettier"
   ],
   "rules": {
+    "@typescript-eslint/member-ordering": [
+      "error",
+      { "default": { "order": "alphabetically" } }
+    ],
     "@typescript-eslint/no-magic-numbers": [
       "error",
       {
@@ -31,12 +35,14 @@
     "fp/no-nil": "off",
     "fp/no-throw": "off",
     "fp/no-unused-expression": "off",
+    "import/exports-last": "error",
     "import/first": "error",
     "import/newline-after-import": "error",
     "import/no-absolute-path": "error",
     "import/no-cycle": "error",
     "import/no-default-export": "error",
     "import/no-duplicates": "error",
+    "import/no-extraneous-dependencies": "error",
     "import/no-mutable-exports": "error",
     "import/no-named-as-default-member": "error",
     "import/no-named-as-default": "error",
@@ -45,8 +51,18 @@
     "import/no-self-import": "error",
     "import/no-unused-modules": "error",
     "import/no-useless-path-segments": "error",
+    "import/order": [
+      "error",
+      {
+        "alphabetize": { "order": "asc", "caseInsensitive": true },
+        "groups": ["builtin", "external", "sibling"],
+        "newlines-between": "always"
+      }
+    ],
     "max-params": "off",
     "new-cap": "off",
-    "one-var": ["error", "never"]
+    "one-var": ["error", "never"],
+    "sort-exports/sort-exports": ["error", { "sortDir": "asc" }],
+    "sort-imports": ["error", { "ignoreDeclarationSort": true }]
   }
 }

@@ -1,18 +1,18 @@
-import arrayType from "ref-array-napi";
 import ffi from "ffi-napi";
+import arrayType from "ref-array-napi";
 import ref from "ref-napi";
 import structType from "ref-struct-napi";
 
-export const enetUint8 = ref.types.uchar;
-export const enetUint16 = ref.types.ushort;
-export const enetUint32 = ref.types.uint;
+const enetUint8 = ref.types.uchar;
+const enetUint16 = ref.types.ushort;
+const enetUint32 = ref.types.uint;
 
-export const enetAddress = structType([
+const enetAddress = structType([
   [enetUint32, "host"],
   [enetUint16, "port"],
 ]);
 
-export const enetPacket = structType([
+const enetPacket = structType([
   [ref.types.size_t, "referenceCount"],
   [enetUint32, "flags"],
   [ref.refType(enetUint8), "data"],
@@ -20,13 +20,13 @@ export const enetPacket = structType([
   [ffi.Function(ref.types.void, []), "freeCallback"],
 ]);
 
-export const enetListNode = structType();
+const enetListNode = structType();
 enetListNode.defineProperty("next", ref.refType(enetListNode));
 enetListNode.defineProperty("previous", ref.refType(enetListNode));
 
-export const enetList = structType([[enetListNode, "sentinel"]]);
+const enetList = structType([[enetListNode, "sentinel"]]);
 
-export const enetChannel = structType([
+const enetChannel = structType([
   [enetUint16, "outgoingReliableSequenceNumber"],
   [enetUint16, "outgoingUnreliableSequenceNumber"],
   [enetUint16, "usedReliableWindows"],
@@ -38,7 +38,7 @@ export const enetChannel = structType([
 
 const enetPeerState = ref.types.int;
 
-export const enetPeer = structType([
+const enetPeer = structType([
   [enetListNode, "dispatchList"],
   [ref.refType(ref.types.Object), "host"],
   [enetUint16, "outgoingPeerID"],
@@ -94,7 +94,7 @@ export const enetPeer = structType([
   [enetUint32, "disconnectData"],
 ]);
 
-export const enetHost = structType([
+const enetHost = structType([
   [ref.types.Object, "socket"],
   [enetAddress, "address"],
   [enetUint32, "incomingBandwidth"],
@@ -126,10 +126,24 @@ export const enetHost = structType([
 
 const enetEventType = ref.types.int;
 
-export const enetEvent = structType([
+const enetEvent = structType([
   [enetEventType, "type"],
   [ref.refType(enetPeer), "peer"],
   [enetUint8, "channelID"],
   [enetUint32, "data"],
   [ref.refType(enetPacket), "packet"],
 ]);
+
+export {
+  enetAddress,
+  enetChannel,
+  enetEvent,
+  enetHost,
+  enetList,
+  enetListNode,
+  enetPacket,
+  enetPeer,
+  enetUint16,
+  enetUint32,
+  enetUint8,
+};

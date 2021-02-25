@@ -1,5 +1,5 @@
-import type { IENetPacket, IENetPeer } from "./enet";
 import { enet_peer_send } from "./native";
+import type { IENetPacket, IENetPeer } from "./structs";
 
 export const send = (
   peer: IENetPeer,

@@ -1,34 +1,36 @@
 import type { ENetEventType, ENetPacketFlag } from "./enums";
 
-export interface IENetAddress {
+interface IENetAddress {
   host: string;
   port: number;
 }
 
-export interface IENetEvent {
-  native: Buffer;
+interface IENetEvent {
   channelID: number;
   data: number;
+  native: Buffer;
   packet: IENetPacket | null;
   peer: IENetPeer;
   type: ENetEventType;
 }
 
-export interface IENetHost {
+interface IENetHost {
   native: Buffer;
   peers: IENetPeer[];
 }
 
-export interface IENetPacket {
-  native: Buffer;
-  referenceCount: number;
-  flags: ENetPacketFlag;
+interface IENetPacket {
   data: Buffer;
   dataLength: number;
+  flags: ENetPacketFlag;
+  native: Buffer;
+  referenceCount: number;
 }
 
-export interface IENetPeer {
-  native: Buffer;
+interface IENetPeer {
   address: IENetAddress;
   mtu: number;
+  native: Buffer;
 }
+
+export { IENetAddress, IENetEvent, IENetHost, IENetPacket, IENetPeer };

@@ -1,7 +1,8 @@
-import { ENetPacketFlag } from "./enums";
-import type { IENetPacket } from "./structs";
-import { enet_packet_create } from "./native";
 import ref from "ref-napi";
+
+import { ENetPacketFlag } from "./enums";
+import { enet_packet_create } from "./native";
+import type { IENetPacket } from "./structs";
 
 export const create = (
   data: Buffer,

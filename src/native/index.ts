@@ -1,13 +1,12 @@
 /* eslint "camelcase": ["error", { "allow": ["enet_*"] }] */
 /* eslint "@typescript-eslint/naming-convention": [
     "error",
-    {
-      "custom": { "match": true, "regex": "enet_*" },
-      "format": ["snake_case"],
-      "selector": "property"
-    }
+    { "format": ["snake_case"], "selector": "property" }
   ]
 */
+import ffi from "ffi-napi";
+import ref from "ref-napi";
+
 import {
   enetAddress,
   enetEvent,
@@ -17,11 +16,10 @@ import {
   enetUint32,
   enetUint8,
 } from "./structs";
-import ffi from "ffi-napi";
+
 // @ts-expect-error Package json of the project it was installed from
 // eslint-disable-next-line import/no-unresolved
 import packageJson from "../../../package.json";
-import ref from "ref-napi";
 
 interface INativeFunctions {
   enet_host_create: (

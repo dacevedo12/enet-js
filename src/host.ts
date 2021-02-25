@@ -1,3 +1,8 @@
+import ref from "ref-napi";
+
+import type { ENetEventType } from "./enums";
+import { enet_host_create, enet_host_service } from "./native";
+import { enetAddress, enetEvent } from "./native/structs";
 import type {
   IENetAddress,
   IENetEvent,
@@ -5,14 +10,10 @@ import type {
   IENetPacket,
   IENetPeer,
 } from "./structs";
-import { enetAddress, enetEvent } from "./native/structs";
-import { enet_host_create, enet_host_service } from "./native";
 import { ipFromLong, ipToLong } from "./util";
-import type { ENetEventType } from "./enums";
 import type { StructBuffer } from "./util";
-import ref from "ref-napi";
 
-export const create = (
+const create = (
   address: IENetAddress,
   peerCount: number,
   incomingBandwidth: number,
@@ -115,5 +116,7 @@ const getEvents = (
   return [formatEvent(event), ...getEvents(host, timeout, events)];
 };
 
-export const service = (host: IENetHost, timeout: number): IENetEvent[] =>
+const service = (host: IENetHost, timeout: number): IENetEvent[] =>
   getEvents(host, timeout, []);
+
+export { create, service };
