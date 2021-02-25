@@ -16,7 +16,7 @@ import {
   enetPeer,
   enetUint32,
   enetUint8,
-} from "./nativeStructs";
+} from "./structs";
 import ffi from "ffi-napi";
 // @ts-expect-error Package json of the project it was installed from
 // eslint-disable-next-line import/no-unresolved

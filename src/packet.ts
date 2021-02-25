@@ -1,5 +1,5 @@
-import { ENetPacketFlag } from "./enet";
-import type { IENetPacket } from "./enet";
+import { ENetPacketFlag } from "./enums";
+import type { IENetPacket } from "./structs";
 import { enet_packet_create } from "./native";
 import ref from "ref-napi";
 

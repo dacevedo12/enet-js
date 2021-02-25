@@ -1,14 +1,14 @@
 import type {
-  ENetEventType,
   IENetAddress,
   IENetEvent,
   IENetHost,
   IENetPacket,
   IENetPeer,
-} from "./enet";
-import { enetAddress, enetEvent } from "./nativeStructs";
+} from "./structs";
+import { enetAddress, enetEvent } from "./native/structs";
 import { enet_host_create, enet_host_service } from "./native";
 import { ipFromLong, ipToLong } from "./util";
+import type { ENetEventType } from "./enums";
 import type { StructBuffer } from "./util";
 import ref from "ref-napi";
 
