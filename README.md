@@ -11,7 +11,9 @@ contribute the ones you need
 
 ## Versioning
 
-![npm (tag)](https://img.shields.io/npm/v/enet-js/1.2x)
+[![npm (tag)](https://img.shields.io/npm/v/enet-js/1.2x)](
+  https://www.npmjs.com/package/enet-js
+)
 
 The branch name on the repo and release tag on npm match the supported major
 enet version
@@ -43,7 +45,7 @@ Here's an example of a basic server
 
 ```ts
 import type { IENetAddress, IENetEvent, IENetHost } from "enet-js";
-import { enet, ENET_HOST_ANY, ENetEventType } from "enet-js";
+import { ENET_HOST_ANY, ENetEventType, enet } from "enet-js";
 
 const main = (): void => {
   if (enet.initialize() !== 0) {
@@ -51,7 +53,7 @@ const main = (): void => {
   } else {
     const address: IENetAddress = {
       host: ENET_HOST_ANY,
-      port: 2600
+      port: 2600,
     };
     const peerCount = 32;
     const host: IENetHost | null = enet.host.create(address, peerCount, 0, 0);
@@ -59,7 +61,7 @@ const main = (): void => {
     if (host === null) {
       console.error("Unable to create host");
     } else {
-      console.log(`Server running in port ${address.port}`);
+      console.log("Server running in port", address.port);
 
       while (true) {
         const timeout = 0;
@@ -98,7 +100,7 @@ const main = (): void => {
       }
     }
   }
-}
+};
 
 main();
 ```

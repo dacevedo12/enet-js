@@ -1,9 +1,5 @@
 /* eslint no-bitwise: "off" */
 
-interface StructBuffer extends Buffer {
-  ref: () => Buffer;
-}
-
 const ipToLong = (ip: string): number =>
   ip
     .split(".")
@@ -20,4 +16,4 @@ const ipFromLong = (ipLong: number): string =>
     "."
   );
 
-export { StructBuffer, ipFromLong, ipToLong };
+export { ipFromLong, ipToLong };

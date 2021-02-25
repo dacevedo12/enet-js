@@ -4,6 +4,9 @@
     { "format": ["snake_case"], "selector": "property" }
   ]
 */
+import fs from "fs";
+import path from "path";
+
 import ffi from "ffi-napi";
 import ref from "ref-napi";
 
@@ -16,10 +19,6 @@ import {
   enetUint32,
   enetUint8,
 } from "./structs";
-
-// @ts-expect-error Package json of the project it was installed from
-// eslint-disable-next-line import/no-unresolved
-import packageJson from "../../../package.json";
 
 interface INativeFunctions {
   enet_host_create: (
@@ -38,16 +37,20 @@ interface INativeFunctions {
   enet_peer_send: (peer: Buffer, channelID: number, packet: Buffer) => number;
 }
 
-const binaryPath = (packageJson as Record<string, string>).enetLibPath;
+const { enetLibPath } = JSON.parse(
+  fs.readFileSync(path.join(process.cwd(), "package.json"), {
+    encoding: "utf8",
+  })
+) as Record<string, string>;
 
-if (!binaryPath) {
+if (!enetLibPath) {
   throw Error(
     "ENet binary not found, make sure to set the 'enetLibPath' property in " +
       "your package.json"
   );
 }
 
-const nativeFunctions: INativeFunctions = ffi.Library(binaryPath, {
+const nativeFunctions: INativeFunctions = ffi.Library(enetLibPath, {
   enet_host_create: [
     ref.refType(enetHost),
     [ref.refType(enetAddress), ref.types.size_t, enetUint32, enetUint32],

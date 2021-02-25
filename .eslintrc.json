@@ -36,6 +36,7 @@
     "fp/no-throw": "off",
     "fp/no-unused-expression": "off",
     "import/exports-last": "error",
+    "import/extensions": ["error", "never"],
     "import/first": "error",
     "import/newline-after-import": "error",
     "import/no-absolute-path": "error",

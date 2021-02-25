@@ -11,7 +11,6 @@ import type {
   IENetPeer,
 } from "./structs";
 import { ipFromLong, ipToLong } from "./util";
-import type { StructBuffer } from "./util";
 
 const create = (
   address: IENetAddress,
@@ -19,11 +18,12 @@ const create = (
   incomingBandwidth: number,
   outgoingBandwidth: number
 ): IENetHost | null => {
+  const addressStruct = enetAddress({
+    host: ipToLong(address.host),
+    port: address.port,
+  }) as Buffer;
   const host = enet_host_create(
-    (enetAddress({
-      host: ipToLong(address.host),
-      port: address.port,
-    }) as StructBuffer).ref(),
+    addressStruct.ref(addressStruct),
     peerCount,
     incomingBandwidth,
     outgoingBandwidth
