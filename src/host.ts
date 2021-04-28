@@ -1,7 +1,11 @@
 import ref from "ref-napi";
 
 import type { ENetEventType } from "./enums";
-import { enet_host_create, enet_host_service } from "./native";
+import {
+  enet_host_broadcast,
+  enet_host_create,
+  enet_host_service,
+} from "./native";
 import { enetAddress, enetEvent } from "./native/structs";
 import type {
   IENetAddress,
@@ -119,4 +123,12 @@ const getEvents = (
 const service = (host: IENetHost, timeout: number): IENetEvent[] =>
   getEvents(host, timeout, []);
 
-export { create, service };
+const broadcast = (
+  host: IENetHost,
+  channelID: number,
+  packet: IENetPacket
+): void => {
+  enet_host_broadcast(host.native, channelID, packet.native);
+};
+
+export { broadcast, create, service };

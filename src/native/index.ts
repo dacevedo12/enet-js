@@ -21,6 +21,11 @@ import {
 } from "./structs";
 
 interface INativeFunctions {
+  enet_host_broadcast: (
+    host: Buffer,
+    channelID: number,
+    packet: Buffer
+  ) => void;
   enet_host_create: (
     address: Buffer,
     peerCount: number,
@@ -51,6 +56,10 @@ if (!enetLibPath) {
 }
 
 const nativeFunctions: INativeFunctions = ffi.Library(enetLibPath, {
+  enet_host_broadcast: [
+    ref.types.void,
+    [ref.refType(enetHost), enetUint8, ref.refType(enetPacket)],
+  ],
   enet_host_create: [
     ref.refType(enetHost),
     [ref.refType(enetAddress), ref.types.size_t, enetUint32, enetUint32],
