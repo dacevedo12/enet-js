@@ -105,23 +105,16 @@ const formatEvent = (eventInstance: Buffer): IENetEvent => {
   };
 };
 
-const getEvents = (
-  host: IENetHost,
-  timeout: number,
-  events: IENetEvent[]
-): IENetEvent[] => {
+const service = (host: IENetHost, timeout: number): IENetEvent | null => {
   const event = ref.alloc(enetEvent);
   const pendingEvents = enet_host_service(host.native, event, timeout);
 
-  if (pendingEvents <= 0) {
-    return events;
+  if (pendingEvents > 0) {
+    return formatEvent(event);
   }
 
-  return [formatEvent(event), ...getEvents(host, timeout, events)];
+  return null;
 };
-
-const service = (host: IENetHost, timeout: number): IENetEvent[] =>
-  getEvents(host, timeout, []);
 
 const broadcast = (
   host: IENetHost,

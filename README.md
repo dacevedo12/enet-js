@@ -65,9 +65,9 @@ const main = (): void => {
 
       while (true) {
         const timeout = 0;
-        const events: IENetEvent[] = enet.host.service(host, timeout);
+        const event: IENetEvent | null = enet.host.service(host, timeout);
 
-        events.forEach((event: IENetEvent): void => {
+        if (event) {
           switch (event.type) {
             case ENetEventType.none:
               break;
@@ -96,7 +96,7 @@ const main = (): void => {
               );
               break;
           }
-        });
+        }
       }
     }
   }
