@@ -1,12 +1,14 @@
 import ref from "ref-napi";
 
-import type { ENetEventType } from "./enums";
 import {
   enet_host_broadcast,
   enet_host_create,
   enet_host_service,
 } from "./native";
 import { enetAddress, enetEvent } from "./native/structs";
+import { ipFromLong, ipToLong } from "./util";
+
+import type { ENetEventType } from "./enums";
 import type {
   IENetAddress,
   IENetEvent,
@@ -14,7 +16,6 @@ import type {
   IENetPacket,
   IENetPeer,
 } from "./structs";
-import { ipFromLong, ipToLong } from "./util";
 
 const create = (
   address: IENetAddress,
@@ -41,9 +42,11 @@ const create = (
 
   return {
     native: host,
-    peers: (hostAttributes.peers as {
-      toArray: () => unknown[];
-    }).toArray() as IENetPeer[],
+    peers: (
+      hostAttributes.peers as {
+        toArray: () => unknown[];
+      }
+    ).toArray() as IENetPeer[],
   };
 };
 
