@@ -39,6 +39,7 @@ interface INativeFunctions {
     dataLength: number,
     flags: number
   ) => Buffer;
+  enet_packet_destroy: (packet: Buffer) => void;
   enet_peer_send: (peer: Buffer, channelID: number, packet: Buffer) => number;
 }
 
@@ -73,6 +74,7 @@ const nativeFunctions: INativeFunctions = ffi.Library(enetLibPath, {
     ref.refType(enetPacket),
     [ref.refType(ref.types.void), ref.types.size_t, enetUint32],
   ],
+  enet_packet_destroy: [ref.types.void, [ref.refType(enetPacket)]],
   enet_peer_send: [
     ref.types.int,
     [ref.refType(enetPeer), enetUint8, ref.refType(enetPacket)],

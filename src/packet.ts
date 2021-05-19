@@ -1,7 +1,7 @@
 import ref from "ref-napi";
 
 import { ENetPacketFlag } from "./enums";
-import { enet_packet_create } from "./native";
+import { enet_packet_create, enet_packet_destroy } from "./native";
 
 import type { IENetPacket } from "./structs";
 
@@ -24,4 +24,8 @@ export const create = (
     native: packet,
     referenceCount: packetAttributes.referenceCount as number,
   };
+};
+
+export const destroy = (packet: IENetPacket): void => {
+  enet_packet_destroy(packet.native);
 };
