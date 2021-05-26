@@ -92,7 +92,7 @@ const formatPeer = (peerInstance: Buffer): IENetPeer => {
 
   // eslint-disable-next-line fp/no-mutating-methods
   Object.defineProperty(peer, "mtu", {
-    get: () => peer.mtu,
+    get: () => peerAttributes.mtu,
     set: (value: number): void => {
       // eslint-disable-next-line fp/no-mutating-assign
       Object.assign(peerAttributes, { mtu: value });
