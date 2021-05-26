@@ -34,7 +34,7 @@
     "networking",
     "udp"
   ],
-  "license": "GPL-3.0",
+  "license": "MIT",
   "main": "./dist/index.js",
   "name": "enet-js",
   "repository": {
