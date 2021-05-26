@@ -1,14 +1,12 @@
 import ref from "ref-napi";
 
+import type { ENetEventType } from "./enums";
 import {
   enet_host_broadcast,
   enet_host_create,
   enet_host_service,
 } from "./native";
 import { enetAddress, enetEvent } from "./native/structs";
-import { ipFromLong, ipToLong } from "./util";
-
-import type { ENetEventType } from "./enums";
 import type {
   IENetAddress,
   IENetEvent,
@@ -16,6 +14,15 @@ import type {
   IENetPacket,
   IENetPeer,
 } from "./structs";
+import { ipFromLong, ipToLong } from "./util";
+
+const broadcast = (
+  host: IENetHost,
+  channelID: number,
+  packet: IENetPacket
+): void => {
+  enet_host_broadcast(host.native, channelID, packet.native);
+};
 
 const create = (
   address: IENetAddress,
@@ -117,14 +124,6 @@ const service = (host: IENetHost, timeout: number): IENetEvent | null => {
   }
 
   return null;
-};
-
-const broadcast = (
-  host: IENetHost,
-  channelID: number,
-  packet: IENetPacket
-): void => {
-  enet_host_broadcast(host.native, channelID, packet.native);
 };
 
 export { broadcast, create, service };

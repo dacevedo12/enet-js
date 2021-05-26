@@ -2,10 +2,9 @@ import ref from "ref-napi";
 
 import { ENetPacketFlag } from "./enums";
 import { enet_packet_create, enet_packet_destroy } from "./native";
-
 import type { IENetPacket } from "./structs";
 
-export const create = (
+const create = (
   data: Buffer,
   flags: ENetPacketFlag = ENetPacketFlag.none
 ): IENetPacket | null => {
@@ -26,6 +25,8 @@ export const create = (
   };
 };
 
-export const destroy = (packet: IENetPacket): void => {
+const destroy = (packet: IENetPacket): void => {
   enet_packet_destroy(packet.native);
 };
+
+export { create, destroy };
