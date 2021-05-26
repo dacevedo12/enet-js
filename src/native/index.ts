@@ -21,6 +21,7 @@ import {
 } from "./structs";
 
 interface INativeFunctions {
+  enet_deinitialize: () => void;
   enet_host_broadcast: (
     host: Buffer,
     channelID: number,
@@ -56,7 +57,8 @@ if (!enetLibPath) {
   );
 }
 
-const nativeFunctions: INativeFunctions = ffi.Library(enetLibPath, {
+const mappings: Record<string, [ref.Type, ref.Type[]]> = {
+  enet_deinitialize: [ref.types.void, []],
   enet_host_broadcast: [
     ref.types.void,
     [ref.refType(enetHost), enetUint8, ref.refType(enetPacket)],
@@ -79,6 +81,8 @@ const nativeFunctions: INativeFunctions = ffi.Library(enetLibPath, {
     ref.types.int,
     [ref.refType(enetPeer), enetUint8, ref.refType(enetPacket)],
   ],
-}) as INativeFunctions;
+};
+
+const nativeFunctions = ffi.Library(enetLibPath, mappings) as INativeFunctions;
 
 export = nativeFunctions;
