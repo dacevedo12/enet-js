@@ -35,7 +35,7 @@
     "udp"
   ],
   "license": "GPL-3.0",
-  "main": "./dist/enet.js",
+  "main": "./dist/index.js",
   "name": "enet-js",
   "repository": {
     "type": "git",
@@ -47,6 +47,6 @@
     "lint": "tsc -p tsconfig.json --noEmit && eslint ./src/ --format codeframe",
     "prepare": "npm run clean && npm run build"
   },
-  "types": "./dist/enet.d.ts",
+  "types": "./dist/index.d.ts",
   "version": "1.2.2"
 }

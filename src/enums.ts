@@ -12,4 +12,6 @@ enum ENetPacketFlag {
   noAllocate = 4,
 }
 
-export { ENetEventType, ENetPacketFlag };
+const ENET_HOST_ANY = "0.0.0.0";
+
+export { ENET_HOST_ANY, ENetEventType, ENetPacketFlag };
