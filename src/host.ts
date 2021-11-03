@@ -35,7 +35,7 @@ const create = (
     port: address.port,
   }) as Buffer;
   const host = enet_host_create(
-    addressStruct.ref(addressStruct),
+    addressStruct.ref(),
     peerCount,
     incomingBandwidth,
     outgoingBandwidth

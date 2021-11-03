@@ -83,6 +83,9 @@ const mappings: Record<string, [ref.Type, ref.Type[]]> = {
   ],
 };
 
-const nativeFunctions = ffi.Library(enetLibPath, mappings) as INativeFunctions;
+const nativeFunctions = ffi.Library(
+  enetLibPath,
+  mappings
+) as unknown as INativeFunctions;
 
 export = nativeFunctions;

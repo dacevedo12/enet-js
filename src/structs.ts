@@ -33,4 +33,4 @@ interface IENetPeer {
   native: Buffer;
 }
 
-export { IENetAddress, IENetEvent, IENetHost, IENetPacket, IENetPeer };
+export type { IENetAddress, IENetEvent, IENetHost, IENetPacket, IENetPeer };
