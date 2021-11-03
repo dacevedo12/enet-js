@@ -21,6 +21,7 @@
     "eslint-plugin-import": "2.23.3",
     "eslint-plugin-prettier": "3.4.0",
     "eslint-plugin-sort-exports": "0.4.0",
+    "markdownlint-cli": "0.29.0",
     "prettier": "2.3.0",
     "typescript": "4.2.4"
   },
@@ -45,6 +46,7 @@
     "build": "tsc",
     "clean": "rm -rf ./dist/",
     "lint-code": "tsc -p tsconfig.json --noEmit && eslint ./src/ --format codeframe",
+    "lint-docs": "markdownlint *.md",
     "prepare": "npm run clean && npm run build"
   },
   "types": "./dist/index.d.ts",

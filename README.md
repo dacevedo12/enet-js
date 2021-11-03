@@ -1,4 +1,4 @@
-## enet-js
+# enet-js
 
 Modern Node.js bindings for [ENet](http://enet.bespin.org/), the reliable UDP
 networking library.
@@ -15,7 +15,7 @@ contribute the ones you need
   https://www.npmjs.com/package/enet-js
 )
 
-The <major>.<minor> version matches the supported enet version
+The `<major>.<minor>` version matches the supported enet version
 
 ## Install
 
@@ -26,7 +26,7 @@ The <major>.<minor> version matches the supported enet version
 ---
 
 ```sh
-$ npm install --save-exact enet-js
+npm install --save-exact enet-js
 ```
 
 Then, add a field in your package.json indicating the path where the enet binary
@@ -108,7 +108,7 @@ main();
 
 This package aims to serve only as a compatibility layer without extending any
 functionality, which means the functions and data structures mirror the
-native ones, whose docs can be found at http://enet.bespin.org/.
+native ones, whose docs can be found at <http://enet.bespin.org/>.
 
 This package also provides [TypeScript](https://www.typescriptlang.org/) type
 definitions to help ensure proper usage

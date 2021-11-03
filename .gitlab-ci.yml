@@ -9,3 +9,12 @@ lint-code:
     - npm install
     - npm run lint-code
   stage: lint
+
+lint-docs:
+  image: node:12
+  only:
+    - branches
+  script:
+    - npm install
+    - npm run lint-docs
+  stage: lint
