@@ -1,0 +1,11 @@
+stages:
+  - lint
+
+lint-code:
+  image: node:12
+  only:
+    - branches
+  script:
+    - npm install
+    - npm run lint-code
+  stage: lint

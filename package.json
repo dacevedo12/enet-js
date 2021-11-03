@@ -44,7 +44,7 @@
   "scripts": {
     "build": "tsc",
     "clean": "rm -rf ./dist/",
-    "lint": "tsc -p tsconfig.json --noEmit && eslint ./src/ --format codeframe",
+    "lint-code": "tsc -p tsconfig.json --noEmit && eslint ./src/ --format codeframe",
     "prepare": "npm run clean && npm run build"
   },
   "types": "./dist/index.d.ts",
