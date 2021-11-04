@@ -38,8 +38,7 @@ publish:
       then
           npm config set -- "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" \
           &&  npm set unsafe-perm true \
-          &&  npm publish \
-          &&  npm dist-tag add enet-js@1.2x 1.2x
+          &&  npm publish --tag 1.2x
       else
           echo "Version didn't change, skipping publish..."
       fi
