@@ -44,5 +44,3 @@ publish:
           echo "Version didn't change, skipping publish..."
       fi
   stage: publish
-  variables:
-    NPM_TOKEN: $NPM_TOKEN
