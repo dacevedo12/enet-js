@@ -1,18 +1,21 @@
 import ffi from "ffi-napi";
-import ArrayType from "ref-array-napi";
+import array from "ref-array-di";
 import ref from "ref-napi";
-import StructType from "ref-struct-napi";
+import struct from "ref-struct-di";
+
+const arrayType = array(ref);
+const structType = struct(ref);
 
 const enetUint8 = ref.types.uchar;
 const enetUint16 = ref.types.ushort;
 const enetUint32 = ref.types.uint;
 
-const enetAddress = StructType([
+const enetAddress = structType([
   [enetUint32, "host"],
   [enetUint16, "port"],
 ]);
 
-const enetPacket = StructType([
+const enetPacket = structType([
   [ref.types.size_t, "referenceCount"],
   [enetUint32, "flags"],
   [ref.refType(enetUint8), "data"],
@@ -20,13 +23,13 @@ const enetPacket = StructType([
   [ffi.Function(ref.types.void, []), "freeCallback"],
 ]);
 
-const enetListNode = StructType();
+const enetListNode = structType();
 enetListNode.defineProperty("next", ref.refType(enetListNode));
 enetListNode.defineProperty("previous", ref.refType(enetListNode));
 
-const enetList = StructType([[enetListNode, "sentinel"]]);
+const enetList = structType([[enetListNode, "sentinel"]]);
 
-const enetChannel = StructType([
+const enetChannel = structType([
   [enetUint16, "outgoingReliableSequenceNumber"],
   [enetUint16, "outgoingUnreliableSequenceNumber"],
   [enetUint16, "usedReliableWindows"],
@@ -38,7 +41,7 @@ const enetChannel = StructType([
 
 const enetPeerState = ref.types.int;
 
-const enetPeer = StructType([
+const enetPeer = structType([
   [enetListNode, "dispatchList"],
   [ref.refType(ref.types.Object), "host"],
   [enetUint16, "outgoingPeerID"],
@@ -94,7 +97,7 @@ const enetPeer = StructType([
   [enetUint32, "disconnectData"],
 ]);
 
-const enetHost = StructType([
+const enetHost = structType([
   [ref.types.Object, "socket"],
   [enetAddress, "address"],
   [enetUint32, "incomingBandwidth"],
@@ -102,7 +105,7 @@ const enetHost = StructType([
   [enetUint32, "bandwidthThrottleEpoch"],
   [enetUint32, "mtu"],
   [ref.types.int, "recalculateBandwidthLimits"],
-  [ArrayType(enetPeer), "peers"],
+  [arrayType(enetPeer), "peers"],
   [ref.types.size_t, "peerCount"],
   [ref.types.size_t, "channelLimit"],
   [enetUint32, "serviceTime"],
@@ -126,7 +129,7 @@ const enetHost = StructType([
 
 const enetEventType = ref.types.int;
 
-const enetEvent = StructType([
+const enetEvent = structType([
   [enetEventType, "type"],
   [ref.refType(enetPeer), "peer"],
   [enetUint8, "channelID"],
