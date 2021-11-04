@@ -34,9 +34,10 @@ publish:
   script:
     - npm install
     - |
-      if git diff package.json | grep '+  "version"'
+      if git diff "${CI_COMMIT_BEFORE_SHA}" package.json | grep '+  "version"'
       then
           npm config set -- "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" \
+          &&  npm set unsafe-perm true \
           &&  npm publish \
           &&  npm dist-tag add enet-js@1.2x 1.2x
       else
