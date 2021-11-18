@@ -96,6 +96,8 @@ if (host === null) {
   console.log("Server running on port", address.port);
 
   // ...
+
+  enet.host.destroy(host);
 }
 ```
 

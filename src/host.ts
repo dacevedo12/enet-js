@@ -4,6 +4,7 @@ import type { ENetEventType } from "./enums";
 import {
   enet_host_broadcast,
   enet_host_create,
+  enet_host_destroy,
   enet_host_service,
 } from "./native";
 import { enetAddress, enetEvent } from "./native/structs";
@@ -55,6 +56,10 @@ const create = (
       }
     ).toArray() as IENetPeer[],
   };
+};
+
+const destroy = (host: IENetHost): void => {
+  enet_host_destroy(host.native);
 };
 
 const formatPacket = (packetInstance: Buffer): IENetPacket | null => {
@@ -126,4 +131,4 @@ const service = (host: IENetHost, timeout: number): IENetEvent | null => {
   return null;
 };
 
-export { broadcast, create, service };
+export { broadcast, create, destroy, service };

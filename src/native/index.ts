@@ -33,6 +33,7 @@ interface INativeFunctions {
     incomingBandwidth: number,
     outgoingBandwidth: number
   ) => Buffer;
+  enet_host_destroy: (host: Buffer) => void;
   enet_host_service: (host: Buffer, event: Buffer, timeout: number) => number;
   enet_initialize: () => number;
   enet_packet_create: (
@@ -67,6 +68,7 @@ const mappings: Record<string, [ref.Type, ref.Type[]]> = {
     ref.refType(enetHost),
     [ref.refType(enetAddress), ref.types.size_t, enetUint32, enetUint32],
   ],
+  enet_host_destroy: [ref.types.void, [ref.refType(enetHost)]],
   enet_host_service: [
     ref.types.int,
     [ref.refType(enetHost), ref.refType(enetEvent), enetUint32],
