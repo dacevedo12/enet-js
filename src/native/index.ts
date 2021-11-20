@@ -33,6 +33,9 @@ if (!enetLibPath) {
   );
 }
 
+const nullable = <T>(pointer: T): ref.Type<ref.Value<null>> | T =>
+  pointer as ref.Type<ref.Value<null>> | T;
+
 const nativeFunctions = ffi.Library(enetLibPath, {
   enet_deinitialize: [ref.types.void, []],
   enet_host_broadcast: [
@@ -41,7 +44,12 @@ const nativeFunctions = ffi.Library(enetLibPath, {
   ],
   enet_host_create: [
     ref.refType(enetHost),
-    [ref.refType(enetAddress), ref.types.size_t, enetUint32, enetUint32],
+    [
+      nullable(ref.refType(enetAddress)),
+      ref.types.size_t,
+      enetUint32,
+      enetUint32,
+    ],
   ],
   enet_host_destroy: [ref.types.void, [ref.refType(enetHost)]],
   enet_host_service: [

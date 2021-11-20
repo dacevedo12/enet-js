@@ -25,18 +25,27 @@ const broadcast = (
   enet_host_broadcast(host.native, channelID, packet.native);
 };
 
+const formatAddress = (
+  address: IENetAddress | null
+): ref.Pointer<ReturnType<typeof enetAddress>> | ref.Value<null> => {
+  if (address === null) {
+    return ref.NULL;
+  }
+
+  return enetAddress({
+    host: ipToLong(address.host),
+    port: address.port,
+  }).ref();
+};
+
 const create = (
-  address: IENetAddress,
+  address: IENetAddress | null,
   peerCount: number,
   incomingBandwidth: number,
   outgoingBandwidth: number
 ): IENetHost | null => {
-  const addressStruct = enetAddress({
-    host: ipToLong(address.host),
-    port: address.port,
-  });
   const host = enet_host_create(
-    addressStruct.ref(),
+    formatAddress(address),
     peerCount,
     incomingBandwidth,
     outgoingBandwidth
