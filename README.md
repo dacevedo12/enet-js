@@ -101,6 +101,33 @@ if (host === null) {
 }
 ```
 
+### Creating an ENet client
+
+<http://enet.bespin.org/Tutorial.html#CreateClient>
+
+```ts
+const host: IENetHost | null = enet.host.create(
+  // create a client host
+  null,
+  // only allow 1 outgoing connection
+  1,
+  // assume any amount of incoming bandwidth
+  0,
+  // assume any amount of outgoing bandwidth
+  0
+);
+
+if (host === null) {
+  console.error("Unable to create host");
+  process.exit(1);
+} else {
+
+  // ...
+
+  enet.host.destroy(host);
+}
+```
+
 ### Managing an ENet host
 
 <http://enet.bespin.org/Tutorial.html#ManageHost>
