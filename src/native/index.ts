@@ -20,31 +20,6 @@ import {
   enetUint8,
 } from "./structs";
 
-interface INativeFunctions {
-  enet_deinitialize: () => void;
-  enet_host_broadcast: (
-    host: Buffer,
-    channelID: number,
-    packet: Buffer
-  ) => void;
-  enet_host_create: (
-    address: Buffer,
-    peerCount: number,
-    incomingBandwidth: number,
-    outgoingBandwidth: number
-  ) => Buffer;
-  enet_host_destroy: (host: Buffer) => void;
-  enet_host_service: (host: Buffer, event: Buffer, timeout: number) => number;
-  enet_initialize: () => number;
-  enet_packet_create: (
-    data: Buffer,
-    dataLength: number,
-    flags: number
-  ) => Buffer;
-  enet_packet_destroy: (packet: Buffer) => void;
-  enet_peer_send: (peer: Buffer, channelID: number, packet: Buffer) => number;
-}
-
 const { enetLibPath } = JSON.parse(
   fs.readFileSync(path.join(process.cwd(), "package.json"), {
     encoding: "utf8",
@@ -58,7 +33,7 @@ if (!enetLibPath) {
   );
 }
 
-const mappings: Record<string, [ref.Type, ref.Type[]]> = {
+const nativeFunctions = ffi.Library(enetLibPath, {
   enet_deinitialize: [ref.types.void, []],
   enet_host_broadcast: [
     ref.types.void,
@@ -83,11 +58,6 @@ const mappings: Record<string, [ref.Type, ref.Type[]]> = {
     ref.types.int,
     [ref.refType(enetPeer), enetUint8, ref.refType(enetPacket)],
   ],
-};
-
-const nativeFunctions = ffi.Library(
-  enetLibPath,
-  mappings
-) as unknown as INativeFunctions;
+});
 
 export = nativeFunctions;

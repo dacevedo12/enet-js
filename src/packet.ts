@@ -8,18 +8,22 @@ const create = (
   data: Buffer,
   flags: ENetPacketFlag = ENetPacketFlag.none
 ): IENetPacket | null => {
-  const packet: Buffer = enet_packet_create(data, data.length, flags);
+  const packet = enet_packet_create(
+    data as ref.Pointer<void>,
+    data.length,
+    flags
+  );
 
   if (ref.isNull(packet)) {
     return null;
   }
 
-  const packetAttributes = ref.deref(packet) as Record<string, unknown>;
+  const packetAttributes = ref.deref(packet);
 
   return {
     data: packetAttributes.data as Buffer,
     dataLength: packetAttributes.dataLength as number,
-    flags: packetAttributes.flags as number,
+    flags: packetAttributes.flags,
     native: packet,
     referenceCount: packetAttributes.referenceCount as number,
   };

@@ -1,12 +1,12 @@
 import ref from "ref-napi";
 
-import type { ENetEventType } from "./enums";
 import {
   enet_host_broadcast,
   enet_host_create,
   enet_host_destroy,
   enet_host_service,
 } from "./native";
+import type { enetPacket, enetPeer } from "./native/structs";
 import { enetAddress, enetEvent } from "./native/structs";
 import type {
   IENetAddress,
@@ -46,7 +46,7 @@ const create = (
     return null;
   }
 
-  const hostAttributes = ref.deref(host) as Record<string, unknown>;
+  const hostAttributes = ref.deref(host);
 
   return {
     native: host,
@@ -62,41 +62,46 @@ const destroy = (host: IENetHost): void => {
   enet_host_destroy(host.native);
 };
 
-const formatPacket = (packetInstance: Buffer): IENetPacket | null => {
-  if (ref.isNull(packetInstance)) {
+const formatPacket = (
+  packet: ref.Pointer<ReturnType<typeof enetPacket>>
+): IENetPacket | null => {
+  if (ref.isNull(packet)) {
     return null;
   }
 
-  const packetAttributes = ref.deref(packetInstance) as Record<string, unknown>;
-  const dataLength = packetAttributes.dataLength as number;
+  const packetAttributes = ref.deref(packet);
 
   // Workaround to properly set the actual size of each packet
   // eslint-disable-next-line fp/no-mutating-assign
-  Object.assign((packetAttributes.data as Buffer).type, { size: dataLength });
+  Object.assign(packetAttributes.data.type, {
+    size: packetAttributes.dataLength,
+  });
 
   return {
-    data: packetAttributes.data as Buffer,
-    dataLength,
-    flags: packetAttributes.flags as number,
-    native: packetInstance,
-    referenceCount: packetAttributes.referenceCount as number,
+    data: packetAttributes.data,
+    dataLength: Number(packetAttributes.dataLength),
+    flags: packetAttributes.flags,
+    native: packet,
+    referenceCount: Number(packetAttributes.referenceCount),
   };
 };
 
-const formatPeer = (peerInstance: Buffer): IENetPeer => {
-  const peerAttributes = ref.deref(peerInstance) as Record<string, unknown>;
-  const peerAddress = peerAttributes.address as Record<string, number>;
-  const peer = {
+const formatPeer = (
+  peer: ref.Pointer<ReturnType<typeof enetPeer>>
+): IENetPeer => {
+  const peerAttributes = ref.deref(peer);
+  const peerAddress = peerAttributes.address;
+  const peerObject = {
     address: {
       host: ipFromLong(peerAddress.host),
       port: peerAddress.port,
     },
-    mtu: peerAttributes.mtu as number,
-    native: peerInstance,
+    mtu: peerAttributes.mtu,
+    native: peer,
   };
 
   // eslint-disable-next-line fp/no-mutating-methods
-  Object.defineProperty(peer, "mtu", {
+  Object.defineProperty(peerObject, "mtu", {
     get: () => peerAttributes.mtu,
     set: (value: number): void => {
       // eslint-disable-next-line fp/no-mutating-assign
@@ -104,24 +109,28 @@ const formatPeer = (peerInstance: Buffer): IENetPeer => {
     },
   });
 
-  return peer;
+  return peerObject;
 };
 
-const formatEvent = (eventInstance: Buffer): IENetEvent => {
-  const eventAttributes = ref.deref(eventInstance) as Record<string, unknown>;
+const formatEvent = (
+  event: ref.Pointer<ReturnType<typeof enetEvent>>
+): IENetEvent => {
+  const eventAttributes = ref.deref(event);
 
   return {
-    channelID: eventAttributes.channelID as number,
-    data: eventAttributes.data as number,
-    native: eventInstance,
-    packet: formatPacket(eventAttributes.packet as Buffer),
-    peer: formatPeer(eventAttributes.peer as Buffer),
-    type: eventAttributes.type as ENetEventType,
+    channelID: eventAttributes.channelID,
+    data: eventAttributes.data,
+    native: event,
+    packet: formatPacket(eventAttributes.packet),
+    peer: formatPeer(eventAttributes.peer),
+    type: eventAttributes.type,
   };
 };
 
 const service = (host: IENetHost, timeout: number): IENetEvent | null => {
-  const event = ref.alloc(enetEvent);
+  const event = ref.alloc(enetEvent) as unknown as ref.Pointer<
+    ReturnType<typeof enetEvent>
+  >;
   const pendingEvents = enet_host_service(host.native, event, timeout);
 
   if (pendingEvents > 0) {
