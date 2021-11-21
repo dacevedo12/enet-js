@@ -52,6 +52,7 @@ const nativeFunctions = ffi.Library(enetLibPath, {
     ],
   ],
   enet_host_destroy: [ref.types.void, [ref.refType(enetHost)]],
+  enet_host_flush: [ref.types.void, [ref.refType(enetHost)]],
   enet_host_service: [
     ref.types.int,
     [ref.refType(enetHost), ref.refType(enetEvent), enetUint32],
