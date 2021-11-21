@@ -187,7 +187,11 @@ const packet: IENetPacket | null = enet.packet.create(
  * One could also broadcast the packet
  * using enet.host.broadcast(host, 0, packet);
  */
-enet.peer.send(peer, 0, packet);
+if (packet) {
+  enet.peer.send(peer, 0, packet);
+  // One could just use enet.host.service() instead.
+  enet.host.flush(host);
+}
 ```
 
 ## Docs
