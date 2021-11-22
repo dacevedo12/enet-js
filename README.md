@@ -194,6 +194,34 @@ if (packet) {
 }
 ```
 
+### Disconnecting an ENet peer
+
+<http://enet.bespin.org/Tutorial.html#Disconnecting>
+
+```ts
+enet.peer.disconnect(peer, 0);
+/* Allow up to 3 seconds for the disconnect to succeed
+ * and drop any packets received packets.
+ */
+const event: IENetEvent | null = enet.host.service(host, 3000);
+
+if (event) {
+  switch (event.type) {
+    case ENetEventType.disconnect:
+      console.log("Disconnection succeeded.");
+      return;
+
+    case ENetEventType.receive:
+      enet.packet.destroy(packet);
+      break;
+  }
+}
+/* We've arrived here, so the disconnect attempt didn't
+ * succeed yet. Force the connection down.
+ */
+enet.peer.reset(peer);
+```
+
 ## Docs
 
 This package aims to serve only as a compatibility layer without expanding the
