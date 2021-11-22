@@ -64,6 +64,7 @@ const nativeFunctions = ffi.Library(enetLibPath, {
   ],
   enet_packet_destroy: [ref.types.void, [ref.refType(enetPacket)]],
   enet_peer_disconnect: [ref.types.void, [ref.refType(enetPeer), enetUint32]],
+  enet_peer_reset: [ref.types.void, [ref.refType(enetPeer)]],
   enet_peer_send: [
     ref.types.int,
     [ref.refType(enetPeer), enetUint8, ref.refType(enetPacket)],
