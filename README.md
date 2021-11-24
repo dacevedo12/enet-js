@@ -76,7 +76,7 @@ start();
 const address: IENetAddress = {
   // Bind the server to the default localhost.
   host: ENET_HOST_ANY,
-  port: 2600
+  port: 1234
 };
 const host: IENetHost | null = enet.host.create(
   // the address to bind the server host to
@@ -162,10 +162,10 @@ while (true) {
         console.log(
           "Packet received from channel",
           event.channelID,
-          event.packet
+          event.packet.data
         );
         // Clean up the packet now that we're done using it.
-        enet.packet.destroy(packet);
+        enet.packet.destroy(event.packet);
         break;
     }
   }
@@ -183,7 +183,7 @@ const packet: IENetPacket | null = enet.packet.create(
   ENetPacketFlag.reliable
 );
 
-/** Send the packet to the peer over channel id 0.
+/* Send the packet to the peer over channel id 0.
  * One could also broadcast the packet
  * using enet.host.broadcast(host, 0, packet);
  */
@@ -220,6 +220,40 @@ if (event) {
  * succeed yet. Force the connection down.
  */
 enet.peer.reset(peer);
+```
+
+### Connecting to an ENet host
+
+<http://enet.bespin.org/Tutorial.html#Connecting>
+
+```ts
+// Connect to 127.0.0.1:1234.
+const address: IENetAddress = { host: "127.0.0.1", port: 1234 };
+
+// Initiate the connection, allocating the two channels 0 and 1.
+const peer: IENetPeer | null = enet.host.connect(host, address, 2);
+
+if (peer === null) {
+   console.error("No available peers for initiating an ENet connection");
+   process.exit(1);
+}
+
+// Wait up to 5 seconds for the connection attempt to succeed.
+const event: IENetEvent | null = enet.host.service(host, 5000);
+
+if (event && event.type === ENetEventType.connect) {
+  console.log("Connection to 127.0.0.1:1234 succeeded.");
+
+  // ...
+
+} else {
+  /* Either the 5 seconds are up or a disconnect event was
+   * received. Reset the peer in the event the 5 seconds
+   * had run out without any significant event.
+   */
+  enet.peer.reset(peer);
+  console.error("Connection to 127.0.0.1:1234 failed.");
+}
 ```
 
 ## Docs
