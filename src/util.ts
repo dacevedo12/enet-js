@@ -1,13 +1,15 @@
 /* eslint no-bitwise: "off" */
 
 const ipToLong = (ip: string): number =>
+  // eslint-disable-next-line fp/no-mutating-methods
   ip
     .split(".")
-    .map(parseInt)
+    .reverse()
     .reduce(
-      (previousValue: number, currentValue: number): number =>
+      (previousValue, currentValue) =>
         // eslint-disable-next-line @typescript-eslint/no-magic-numbers
-        (previousValue << 8) + currentValue
+        (previousValue << 8) + parseInt(currentValue, 10),
+      0
     ) >>> 0;
 
 const ipFromLong = (ipLong: number): string =>
