@@ -53,5 +53,5 @@
     "prepare": "npm run clean && npm run build"
   },
   "types": "./dist/index.d.ts",
-  "version": "1.2.5"
+  "version": "1.2.6"
 }
