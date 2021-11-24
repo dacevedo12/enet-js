@@ -24,7 +24,6 @@ interface IENetEvent {
 
 interface IENetHost {
   native: ref.Pointer<ReturnType<typeof enetHost>>;
-  peers: IENetPeer[];
 }
 
 interface IENetPacket {

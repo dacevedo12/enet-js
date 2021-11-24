@@ -7,7 +7,7 @@ import {
   enet_host_flush,
   enet_host_service,
 } from "./native";
-import type { enetPacket, enetPeer } from "./native/structs";
+import type { enetHost, enetPacket, enetPeer } from "./native/structs";
 import { enetAddress, enetEvent } from "./native/structs";
 import type {
   IENetAddress,
@@ -39,6 +39,14 @@ const formatAddress = (
   }).ref();
 };
 
+const formatHost = (
+  host: ref.Pointer<ReturnType<typeof enetHost>>
+): IENetHost => {
+  return {
+    native: host,
+  };
+};
+
 const create = (
   address: IENetAddress | null,
   peerCount: number,
@@ -56,16 +64,7 @@ const create = (
     return null;
   }
 
-  const hostAttributes = ref.deref(host);
-
-  return {
-    native: host,
-    peers: (
-      hostAttributes.peers as {
-        toArray: () => unknown[];
-      }
-    ).toArray() as IENetPeer[],
-  };
+  return formatHost(host);
 };
 
 const destroy = (host: IENetHost): void => {
