@@ -3,6 +3,7 @@ import ref from "ref-napi";
 import { ENetEventType } from "./enums";
 import {
   enet_host_broadcast,
+  enet_host_connect,
   enet_host_create,
   enet_host_destroy,
   enet_host_flush,
@@ -28,16 +29,61 @@ const broadcast = (
 };
 
 const formatAddress = (
+  address: IENetAddress
+): ref.Pointer<ReturnType<typeof enetAddress>> =>
+  enetAddress({
+    host: ipToLong(address.host),
+    port: address.port,
+  }).ref();
+
+const formatPeer = (
+  peer: ref.Pointer<ReturnType<typeof enetPeer>>
+): IENetPeer => {
+  const peerAttributes = ref.deref(peer);
+  const peerAddress = peerAttributes.address;
+  const peerObject = {
+    address: {
+      host: ipFromLong(peerAddress.host),
+      port: peerAddress.port,
+    },
+    mtu: peerAttributes.mtu,
+    native: peer,
+  };
+
+  // eslint-disable-next-line fp/no-mutating-methods
+  Object.defineProperty(peerObject, "mtu", {
+    get: () => peerAttributes.mtu,
+    set: (value: number): void => {
+      // eslint-disable-next-line fp/no-mutating-assign
+      Object.assign(peerAttributes, { mtu: value });
+    },
+  });
+
+  return peerObject;
+};
+
+const connect = (
+  host: IENetHost,
+  address: IENetAddress,
+  channelCount: number
+): IENetPeer | null => {
+  const peer = enet_host_connect(
+    host.native,
+    formatAddress(address),
+    channelCount
+  );
+
+  return formatPeer(peer);
+};
+
+const formatNullableAddress = (
   address: IENetAddress | null
 ): ref.Pointer<ReturnType<typeof enetAddress>> | ref.Value<null> => {
   if (address === null) {
     return ref.NULL;
   }
 
-  return enetAddress({
-    host: ipToLong(address.host),
-    port: address.port,
-  }).ref();
+  return formatAddress(address);
 };
 
 const formatHost = (
@@ -55,7 +101,7 @@ const create = (
   outgoingBandwidth: number
 ): IENetHost | null => {
   const host = enet_host_create(
-    formatAddress(address),
+    formatNullableAddress(address),
     peerCount,
     incomingBandwidth,
     outgoingBandwidth
@@ -94,32 +140,6 @@ const formatPacket = (
     native: packet,
     referenceCount: Number(packetAttributes.referenceCount),
   };
-};
-
-const formatPeer = (
-  peer: ref.Pointer<ReturnType<typeof enetPeer>>
-): IENetPeer => {
-  const peerAttributes = ref.deref(peer);
-  const peerAddress = peerAttributes.address;
-  const peerObject = {
-    address: {
-      host: ipFromLong(peerAddress.host),
-      port: peerAddress.port,
-    },
-    mtu: peerAttributes.mtu,
-    native: peer,
-  };
-
-  // eslint-disable-next-line fp/no-mutating-methods
-  Object.defineProperty(peerObject, "mtu", {
-    get: () => peerAttributes.mtu,
-    set: (value: number): void => {
-      // eslint-disable-next-line fp/no-mutating-assign
-      Object.assign(peerAttributes, { mtu: value });
-    },
-  });
-
-  return peerObject;
 };
 
 const formatEvent = (
@@ -164,4 +184,4 @@ const service = (host: IENetHost, timeout: number): IENetEvent | null => {
   return null;
 };
 
-export { broadcast, create, destroy, flush, service };
+export { broadcast, connect, create, destroy, flush, service };
