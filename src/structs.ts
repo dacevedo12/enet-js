@@ -13,14 +13,31 @@ interface IENetAddress {
   port: number;
 }
 
-interface IENetEvent {
+interface IENetEventBase {
   channelID: number;
   data: number;
   native: ref.Pointer<ReturnType<typeof enetEvent>>;
-  packet: IENetPacket | null;
-  peer: IENetPeer;
-  type: ENetEventType;
 }
+
+interface IENetEventEmpty extends IENetEventBase {
+  packet: null;
+  peer: null;
+  type: ENetEventType.none;
+}
+
+interface IENetEventWithPacket extends IENetEventBase {
+  packet: IENetPacket;
+  peer: IENetPeer;
+  type: ENetEventType.receive;
+}
+
+interface IENetEventWithPeer extends IENetEventBase {
+  peer: IENetPeer;
+  type: ENetEventType.connect | ENetEventType.disconnect;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-type-alias
+type IENetEvent = IENetEventEmpty | IENetEventWithPacket | IENetEventWithPeer;
 
 interface IENetHost {
   native: ref.Pointer<ReturnType<typeof enetHost>>;

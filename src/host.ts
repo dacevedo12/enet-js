@@ -1,5 +1,6 @@
 import ref from "ref-napi";
 
+import { ENetEventType } from "./enums";
 import {
   enet_host_broadcast,
   enet_host_create,
@@ -77,11 +78,7 @@ const flush = (host: IENetHost): void => {
 
 const formatPacket = (
   packet: ref.Pointer<ReturnType<typeof enetPacket>>
-): IENetPacket | null => {
-  if (ref.isNull(packet)) {
-    return null;
-  }
-
+): IENetPacket => {
   const packetAttributes = ref.deref(packet);
 
   // Workaround to properly set the actual size of each packet
@@ -129,14 +126,28 @@ const formatEvent = (
   event: ref.Pointer<ReturnType<typeof enetEvent>>
 ): IENetEvent => {
   const eventAttributes = ref.deref(event);
-
-  return {
+  const baseAttributes = {
     channelID: eventAttributes.channelID,
     data: eventAttributes.data,
     native: event,
-    packet: formatPacket(eventAttributes.packet),
-    peer: formatPeer(eventAttributes.peer),
     type: eventAttributes.type,
+  };
+
+  if (eventAttributes.type === ENetEventType.none) {
+    return { ...baseAttributes, packet: null, peer: null };
+  }
+
+  if (eventAttributes.type === ENetEventType.receive) {
+    return {
+      ...baseAttributes,
+      packet: formatPacket(eventAttributes.packet),
+      peer: formatPeer(eventAttributes.peer),
+    };
+  }
+
+  return {
+    ...baseAttributes,
+    peer: formatPeer(eventAttributes.peer),
   };
 };
 
