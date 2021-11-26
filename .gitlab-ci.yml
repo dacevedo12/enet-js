@@ -1,5 +1,6 @@
 include:
   - local: 1.2/.gitlab-ci.yml
+  - local: 1.3/.gitlab-ci.yml
 
 stages:
   - lint
