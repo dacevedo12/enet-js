@@ -31,7 +31,7 @@
   "engines": {
     "node": "12"
   },
-  "homepage": "https://gitlab.com/dacevedo/enet-js#readme",
+  "homepage": "https://gitlab.com/dacevedo/enet-js",
   "keywords": [
     "backend",
     "enet",

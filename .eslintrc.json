@@ -3,21 +3,6 @@
     "node": true,
     "es6": true
   },
-  "parser": "@typescript-eslint/parser",
-  "parserOptions": {
-    "sourceType": "module",
-    "project": "./tsconfig.json"
-  },
-  "plugins": ["@typescript-eslint", "fp", "import", "prettier", "sort-exports"],
-  "extends": [
-    "eslint:all",
-    "plugin:@typescript-eslint/all",
-    "plugin:fp/recommended",
-    "plugin:import/recommended",
-    "plugin:import/typescript",
-    "plugin:prettier/recommended",
-    "prettier"
-  ],
   "rules": {
     "@typescript-eslint/member-ordering": [
       "error",

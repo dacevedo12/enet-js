@@ -1,45 +1,6 @@
+include:
+  - local: 1.2/.gitlab-ci.yml
+
 stages:
   - lint
   - publish
-
-.dev-only: &dev-only
-  except:
-    - 1.2x
-  only:
-    - branches
-
-.prod-only: &prod-only
-  only:
-    - 1.2x
-
-lint-code:
-  <<: *dev-only
-  image: node:12@sha256:02dee4fa1ef5483dbab3e85aca88eecd51818ec7a97dc521d938d4504fa5b5ec
-  script:
-    - npm install
-    - npm run lint-code
-  stage: lint
-
-lint-docs:
-  <<: *dev-only
-  image: node:12@sha256:02dee4fa1ef5483dbab3e85aca88eecd51818ec7a97dc521d938d4504fa5b5ec
-  script:
-    - npm install
-    - npm run lint-docs
-  stage: lint
-
-publish:
-  <<: *prod-only
-  image: node:12@sha256:02dee4fa1ef5483dbab3e85aca88eecd51818ec7a97dc521d938d4504fa5b5ec
-  script:
-    - npm install
-    - |
-      if git diff "${CI_COMMIT_BEFORE_SHA}" package.json | grep '+  "version"'
-      then
-          npm config set -- "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" \
-          &&  npm set unsafe-perm true \
-          &&  npm publish --tag 1.2x
-      else
-          echo "Version didn't change, skipping publish..."
-      fi
-  stage: publish

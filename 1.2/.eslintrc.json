@@ -1,0 +1,24 @@
+{
+    "extends": [
+        "eslint:all",
+        "plugin:@typescript-eslint/all",
+        "plugin:fp/recommended",
+        "plugin:import/recommended",
+        "plugin:import/typescript",
+        "plugin:prettier/recommended",
+        "prettier",
+        "../.eslintrc.json"
+    ],
+    "parser": "@typescript-eslint/parser",
+    "parserOptions": {
+        "sourceType": "module",
+        "project": "./tsconfig.json"
+    },
+    "plugins": [
+        "@typescript-eslint",
+        "fp",
+        "import",
+        "prettier",
+        "sort-exports"
+    ]
+}
