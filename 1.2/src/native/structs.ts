@@ -1,9 +1,7 @@
 import ffi from "ffi-napi";
-import array from "ref-array-di";
 import ref from "ref-napi";
 import struct from "ref-struct-di";
 
-const arrayType = array(ref);
 const structType = struct(ref);
 
 const enetUint8 = ref.types.uchar;
@@ -41,9 +39,11 @@ const enetChannel = structType([
 
 const enetPeerState = ref.types.int;
 
+const enetHost = structType([]);
+
 const enetPeer = structType([
   [enetListNode, "dispatchList"],
-  [ref.refType(ref.types.Object), "host"],
+  [ref.refType(enetHost), "host"],
   [enetUint16, "outgoingPeerID"],
   [enetUint16, "incomingPeerID"],
   [enetUint32, "sessionID"],
@@ -95,36 +95,6 @@ const enetPeer = structType([
   [enetUint16, "outgoingUnsequencedGroup"],
   [enetUint32, "unsequencedWindow"],
   [enetUint32, "disconnectData"],
-]);
-
-const enetHost = structType([
-  [ref.types.Object, "socket"],
-  [enetAddress, "address"],
-  [enetUint32, "incomingBandwidth"],
-  [enetUint32, "outgoingBandwidth"],
-  [enetUint32, "bandwidthThrottleEpoch"],
-  [enetUint32, "mtu"],
-  [ref.types.int, "recalculateBandwidthLimits"],
-  [arrayType(enetPeer), "peers"],
-  [ref.types.size_t, "peerCount"],
-  [ref.types.size_t, "channelLimit"],
-  [enetUint32, "serviceTime"],
-  [ref.types.Object, "dispatchQueue"],
-  [ref.types.int, "continueSending"],
-  [ref.types.size_t, "packetSize"],
-  [enetUint16, "headerFlags"],
-  [ref.types.Object, "commands"],
-  [ref.types.size_t, "commandCount"],
-  [ref.types.Object, "buffers"],
-  [ref.types.size_t, "bufferCount"],
-  ["pointer", "checksum"],
-  [enetAddress, "receivedAddress"],
-  [enetUint8, "receivedData"],
-  [ref.types.size_t, "receivedDataLength"],
-  [enetUint32, "totalSentData"],
-  [enetUint32, "totalSentPackets"],
-  [enetUint32, "totalReceivedData"],
-  [enetUint32, "totalReceivedPackets"],
 ]);
 
 const enetEventType = ref.types.int;
