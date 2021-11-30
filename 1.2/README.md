@@ -133,7 +133,7 @@ if (host === null) {
 <http://enet.bespin.org/Tutorial.html#ManageHost>
 
 ```ts
-while (true) {
+setInterval((): void => {
   // Wait up to 1000 milliseconds for an event.
   const event: IENetEvent | null = enet.host.service(host, 1000);
 
@@ -169,7 +169,7 @@ while (true) {
         break;
     }
   }
-}
+});
 ```
 
 ### Sending a packet to an ENet peer
