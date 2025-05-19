@@ -11,11 +11,11 @@ contribute the ones you need
 
 ## Versioning
 
-[![npm (tag)](https://img.shields.io/npm/v/enet-js/1.2x)](
+[![npm (tag)](https://img.shields.io/npm/v/enet-js/latest)](
   https://www.npmjs.com/package/enet-js
 )
 
-The `<major>.<minor>` version matches the supported enet version
+The `<major>.<minor>` version matches the supported ENet version
 
 ## Install
 
@@ -26,7 +26,7 @@ The `<major>.<minor>` version matches the supported enet version
 ---
 
 ```sh
-npm install --save-exact enet-js
+npm install --save-exact enet-js@latest
 ```
 
 Then, add a field in your package.json indicating the path where the dynamic
@@ -39,7 +39,7 @@ extension
 }
 ```
 
-To get the dynamic library, compile enet following the instructions at
+To get the dynamic library, compile ENet following the instructions at
 <http://enet.bespin.org/Installation.html>.
 
 ## Usage
@@ -83,6 +83,8 @@ const host: IENetHost | null = enet.host.create(
   address,
   // allow up to 32 clients and/or outgoing connections
   32,
+  // allow up to 2 channels to be used, 0 and 1
+  2,
   // assume any amount of incoming bandwidth
   0,
   // assume any amount of outgoing bandwidth
@@ -111,6 +113,8 @@ const host: IENetHost | null = enet.host.create(
   null,
   // only allow 1 outgoing connection
   1,
+  // allow up to 2 channels to be used, 0 and 1
+  2,
   // assume any amount of incoming bandwidth
   0,
   // assume any amount of outgoing bandwidth
@@ -133,7 +137,7 @@ if (host === null) {
 <http://enet.bespin.org/Tutorial.html#ManageHost>
 
 ```ts
-while (true) {
+setInterval((): void => {
   // Wait up to 1000 milliseconds for an event.
   const event: IENetEvent | null = enet.host.service(host, 1000);
 
@@ -169,7 +173,7 @@ while (true) {
         break;
     }
   }
-}
+});
 ```
 
 ### Sending a packet to an ENet peer
@@ -231,7 +235,7 @@ enet.peer.reset(peer);
 const address: IENetAddress = { host: "127.0.0.1", port: 1234 };
 
 // Initiate the connection, allocating the two channels 0 and 1.
-const peer: IENetPeer | null = enet.host.connect(host, address, 2);
+const peer: IENetPeer | null = enet.host.connect(host, address, 2, 0);
 
 if (peer === null) {
    console.error("No available peers for initiating an ENet connection");

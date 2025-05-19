@@ -65,12 +65,14 @@ const formatPeer = (
 const connect = (
   host: IENetHost,
   address: IENetAddress,
-  channelCount: number
+  channelCount: number,
+  data: number
 ): IENetPeer | null => {
   const peer = enet_host_connect(
     host.native,
     formatAddress(address),
-    channelCount
+    channelCount,
+    data
   );
 
   return formatPeer(peer);
@@ -97,12 +99,14 @@ const formatHost = (
 const create = (
   address: IENetAddress | null,
   peerCount: number,
+  channelLimit: number,
   incomingBandwidth: number,
   outgoingBandwidth: number
 ): IENetHost | null => {
   const host = enet_host_create(
     formatNullableAddress(address),
     peerCount,
+    channelLimit,
     incomingBandwidth,
     outgoingBandwidth
   );

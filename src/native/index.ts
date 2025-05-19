@@ -44,12 +44,18 @@ const nativeFunctions = ffi.Library(enetLibPath, {
   ],
   enet_host_connect: [
     ref.refType(enetPeer),
-    [ref.refType(enetHost), ref.refType(enetAddress), ref.types.size_t],
+    [
+      ref.refType(enetHost),
+      ref.refType(enetAddress),
+      ref.types.size_t,
+      enetUint32,
+    ],
   ],
   enet_host_create: [
     ref.refType(enetHost),
     [
       nullable(ref.refType(enetAddress)),
+      ref.types.size_t,
       ref.types.size_t,
       enetUint32,
       enetUint32,

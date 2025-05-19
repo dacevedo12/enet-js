@@ -2,19 +2,20 @@ stages:
   - lint
   - publish
 
+.node: &node
+  image: node:12@sha256:02dee4fa1ef5483dbab3e85aca88eecd51818ec7a97dc521d938d4504fa5b5ec
+
 .dev-only: &dev-only
-  except:
-    - 1.2x
-  only:
-    - branches
+  rules:
+    - if: '$CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH && $CI_PIPELINE_SOURCE == "push"'
 
 .prod-only: &prod-only
-  only:
-    - 1.2x
+  rules:
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $CI_PIPELINE_SOURCE == "push"'
 
 lint-code:
   <<: *dev-only
-  image: node:12@sha256:02dee4fa1ef5483dbab3e85aca88eecd51818ec7a97dc521d938d4504fa5b5ec
+  <<: *node  
   script:
     - npm install
     - npm run lint-code
@@ -22,7 +23,7 @@ lint-code:
 
 lint-docs:
   <<: *dev-only
-  image: node:12@sha256:02dee4fa1ef5483dbab3e85aca88eecd51818ec7a97dc521d938d4504fa5b5ec
+  <<: *node
   script:
     - npm install
     - npm run lint-docs
@@ -30,7 +31,7 @@ lint-docs:
 
 publish:
   <<: *prod-only
-  image: node:12@sha256:02dee4fa1ef5483dbab3e85aca88eecd51818ec7a97dc521d938d4504fa5b5ec
+  <<: *node
   script:
     - npm install
     - |
@@ -38,7 +39,7 @@ publish:
       then
           npm config set -- "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" \
           &&  npm set unsafe-perm true \
-          &&  npm publish --tag 1.2x
+          &&  npm publish
       else
           echo "Version didn't change, skipping publish..."
       fi
