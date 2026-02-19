@@ -1,32 +1,31 @@
-import ref from "ref-napi";
+import koffi from "koffi";
 
-import { ENetPacketFlag } from "./enums";
-import { enet_packet_create, enet_packet_destroy } from "./native";
-import type { IENetPacket } from "./structs";
+import { ENetPacketFlag } from "./enums.js";
+import {
+  enetPacket,
+  enet_packet_create,
+  enet_packet_destroy,
+} from "./native/index.js";
+import type { IENetPacket } from "./structs.js";
 
 const create = (
   data: Buffer,
-  flags: ENetPacketFlag = ENetPacketFlag.none
+  flags: ENetPacketFlag = ENetPacketFlag.none,
 ): IENetPacket | null => {
-  const packet = enet_packet_create(
-    data as ref.Pointer<void>,
-    data.length,
-    flags
-  );
+  const packet = enet_packet_create(data, data.length, flags) as object | null;
 
-  if (ref.isNull(packet)) {
+  if (!packet) {
     return null;
   }
 
-  const packetAttributes = ref.deref(packet);
-
-  return {
-    data: packetAttributes.data as Buffer,
-    dataLength: packetAttributes.dataLength as number,
-    flags: packetAttributes.flags,
-    native: packet,
-    referenceCount: packetAttributes.referenceCount as number,
+  const packetAttributes = koffi.decode(packet, enetPacket) as {
+    data: Buffer;
+    referenceCount: number;
+    flags: number;
+    dataLength: number;
   };
+
+  return { ...packetAttributes, data, native: packet };
 };
 
 const destroy = (packet: IENetPacket): void => {

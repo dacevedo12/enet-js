@@ -1,7 +1,7 @@
-import * as global from "./global";
-import * as host from "./host";
-import * as packet from "./packet";
-import * as peer from "./peer";
+import * as global from "./global.js";
+import * as host from "./host.js";
+import * as packet from "./packet.js";
+import * as peer from "./peer.js";
 
 const enet = {
   ...global,
@@ -10,7 +10,7 @@ const enet = {
   peer,
 };
 
-export * from "./constants";
-export * from "./enums";
-export * from "./structs";
+export * from "./constants.js";
+export * from "./enums.js";
+export type * from "./structs.js";
 export { enet };
