@@ -1,14 +1,5 @@
-/* eslint "camelcase": ["error", { "allow": ["enet_*"] }] */
-/* eslint "@typescript-eslint/naming-convention": [
-    "error",
-    { "format": ["snake_case"], "selector": "property" }
-  ]
-*/
-import fs from "fs";
-import path from "path";
-
-import ffi from "ffi-napi";
-import ref from "ref-napi";
+/* eslint-disable @typescript-eslint/naming-convention */
+import koffi from "koffi";
 
 import {
   enetAddress,
@@ -16,63 +7,65 @@ import {
   enetHost,
   enetPacket,
   enetPeer,
-  enetUint32,
-  enetUint8,
-} from "./structs";
+} from "./structs.js";
 
-const { enetLibPath } = JSON.parse(
-  fs.readFileSync(path.join(process.cwd(), "package.json"), {
-    encoding: "utf8",
-  })
-) as Record<string, string>;
+const enetLibPath = process.env.ENET_LIB_PATH;
 
-if (!enetLibPath) {
+if (enetLibPath === undefined) {
   throw Error(
-    "ENet binary not found, make sure to set the 'enetLibPath' property in " +
-      "your package.json"
+    "ENET_LIB_PATH is not set; set it to the full path of the ENet shared library",
   );
 }
 
-const nullable = <T>(pointer: T): ref.Type<ref.Value<null>> | T =>
-  pointer as ref.Type<ref.Value<null>> | T;
+const lib = koffi.load(enetLibPath);
 
-const nativeFunctions = ffi.Library(enetLibPath, {
-  enet_deinitialize: [ref.types.void, []],
-  enet_host_broadcast: [
-    ref.types.void,
-    [ref.refType(enetHost), enetUint8, ref.refType(enetPacket)],
-  ],
-  enet_host_connect: [
-    ref.refType(enetPeer),
-    [ref.refType(enetHost), ref.refType(enetAddress), ref.types.size_t],
-  ],
-  enet_host_create: [
-    ref.refType(enetHost),
-    [
-      nullable(ref.refType(enetAddress)),
-      ref.types.size_t,
-      enetUint32,
-      enetUint32,
-    ],
-  ],
-  enet_host_destroy: [ref.types.void, [ref.refType(enetHost)]],
-  enet_host_flush: [ref.types.void, [ref.refType(enetHost)]],
-  enet_host_service: [
-    ref.types.int,
-    [ref.refType(enetHost), ref.refType(enetEvent), enetUint32],
-  ],
-  enet_initialize: [ref.types.int, []],
-  enet_packet_create: [
-    ref.refType(enetPacket),
-    [ref.refType(ref.types.void), ref.types.size_t, enetUint32],
-  ],
-  enet_packet_destroy: [ref.types.void, [ref.refType(enetPacket)]],
-  enet_peer_disconnect: [ref.types.void, [ref.refType(enetPeer), enetUint32]],
-  enet_peer_reset: [ref.types.void, [ref.refType(enetPeer)]],
-  enet_peer_send: [
-    ref.types.int,
-    [ref.refType(enetPeer), enetUint8, ref.refType(enetPacket)],
-  ],
-});
+const enet_initialize = lib.func("int enet_initialize()");
+const enet_deinitialize = lib.func("void enet_deinitialize()");
+const enet_host_create = lib.func(
+  "ENetHost *enet_host_create(ENetAddress *address, size_t peerCount, uint32 incomingBandwidth, uint32 outgoingBandwidth)",
+);
+const enet_host_destroy = lib.func("void enet_host_destroy(ENetHost *host)");
+const enet_host_connect = lib.func(
+  "ENetPeer *enet_host_connect(ENetHost *host, ENetAddress *address, size_t channelCount)",
+);
+const enet_host_service = lib.func(
+  "int enet_host_service(ENetHost *host, _Out_ ENetEvent *event, uint32 timeout)",
+);
+const enet_host_flush = lib.func("void enet_host_flush(ENetHost *host)");
+const enet_host_broadcast = lib.func(
+  "void enet_host_broadcast(ENetHost *host, uint8 channelID, ENetPacket *packet)",
+);
+const enet_packet_create = lib.func(
+  "ENetPacket *enet_packet_create(void *data, size_t dataLength, uint32 flags)",
+);
+const enet_packet_destroy = lib.func(
+  "void enet_packet_destroy(ENetPacket *packet)",
+);
+const enet_peer_send = lib.func(
+  "int enet_peer_send(ENetPeer *peer, uint8 channelID, ENetPacket *packet)",
+);
+const enet_peer_disconnect = lib.func(
+  "void enet_peer_disconnect(ENetPeer *peer, uint32 data)",
+);
+const enet_peer_reset = lib.func("void enet_peer_reset(ENetPeer *peer)");
 
-export = nativeFunctions;
+export {
+  enetAddress,
+  enetEvent,
+  enetHost,
+  enetPacket,
+  enetPeer,
+  enet_deinitialize,
+  enet_host_broadcast,
+  enet_host_connect,
+  enet_host_create,
+  enet_host_destroy,
+  enet_host_flush,
+  enet_host_service,
+  enet_initialize,
+  enet_packet_create,
+  enet_packet_destroy,
+  enet_peer_disconnect,
+  enet_peer_reset,
+  enet_peer_send,
+};
