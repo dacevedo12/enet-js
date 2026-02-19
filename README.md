@@ -3,43 +3,41 @@
 Modern Node.js bindings for [ENet](http://enet.bespin.org/), the reliable UDP
 networking library.
 
-This package uses N-API to provide a foreign function interface for the
-native C library
+This package uses [Koffi](https://koffi.dev/) to provide a foreign function
+interface for the native C library
 
 Note that some ENet functions have not been covered yet, so feel free to
 contribute the ones you need
 
 ## Versioning
 
-[![npm (tag)](https://img.shields.io/npm/v/enet-js/latest)](
-  https://www.npmjs.com/package/enet-js
-)
+[![npm (tag)](https://img.shields.io/npm/v/enet-js/latest)](https://www.npmjs.com/package/enet-js)
 
-The `<major>.<minor>` version matches the supported ENet version
+The `<major>.<minor>` version matches the supported enet version
 
 ## Install
 
----
-**NOTE**: Node.js 14+ is currently unsupported due to a N-API
-[bug](https://github.com/node-ffi-napi/node-ffi-napi/issues/97)
+```sh
+npm install --save-exact enet-js
+```
 
----
+**Note:** This package requires Node.js 18 or later.
+
+Before importing enet-js, set the `ENET_LIB_PATH` environment variable to the
+full path of the ENet shared library (including extension, e.g. `.dll`,
+`.dylib`, or `.so`).
 
 ```sh
-npm install --save-exact enet-js@latest
+export ENET_LIB_PATH="/path/to/libenet.0.dylib"
 ```
 
-Then, add a field in your package.json indicating the path where the dynamic
-library is located. If you have binaries for multiple platforms, omit the
-extension
+Or set it when running your application:
 
-```json
-{
-  "enetLibPath": "path/to/enet(.dll|.dylib|.so)"
-}
+```sh
+ENET_LIB_PATH=/path/to/libenet.0.dylib node your-app.js
 ```
 
-To get the dynamic library, compile ENet following the instructions at
+To get the dynamic library, compile enet following the instructions at
 <http://enet.bespin.org/Installation.html>.
 
 ## Usage
@@ -76,19 +74,19 @@ start();
 const address: IENetAddress = {
   // Bind the server to the default localhost.
   host: ENET_HOST_ANY,
-  port: 1234
+  port: 1234,
 };
 const host: IENetHost | null = enet.host.create(
   // the address to bind the server host to
   address,
   // allow up to 32 clients and/or outgoing connections
   32,
-  // allow up to 2 channels to be used, 0 and 1
-  2,
+  // assume any number of channels
+  0,
   // assume any amount of incoming bandwidth
   0,
   // assume any amount of outgoing bandwidth
-  0
+  0,
 );
 
 if (host === null) {
@@ -113,19 +111,18 @@ const host: IENetHost | null = enet.host.create(
   null,
   // only allow 1 outgoing connection
   1,
-  // allow up to 2 channels to be used, 0 and 1
-  2,
+  // assume any number of channels
+  0,
   // assume any amount of incoming bandwidth
   0,
   // assume any amount of outgoing bandwidth
-  0
+  0,
 );
 
 if (host === null) {
   console.error("Unable to create host");
   process.exit(1);
 } else {
-
   // ...
 
   enet.host.destroy(host);
@@ -137,43 +134,41 @@ if (host === null) {
 <http://enet.bespin.org/Tutorial.html#ManageHost>
 
 ```ts
-setInterval((): void => {
+while (true) {
   // Wait up to 1000 milliseconds for an event.
-  const event: IENetEvent | null = enet.host.service(host, 1000);
+  const event: IENetEvent = enet.host.service(host, 1000);
 
-  if (event) {
-    switch (event.type) {
-      case ENetEventType.none:
-        break;
+  switch (event.type) {
+    case ENetEventType.none:
+      break;
 
-      case ENetEventType.connect:
-        console.log(
-          "Client connected",
-          event.peer.address.host,
-          event.peer.address.port
-        );
-        break;
+    case ENetEventType.connect:
+      console.log(
+        "Client connected",
+        event.peer.address.host,
+        event.peer.address.port,
+      );
+      break;
 
-      case ENetEventType.disconnect:
-        console.log(
-          "Client disconnected",
-          event.peer.address.host,
-          event.peer.address.port
-        );
-        break;
+    case ENetEventType.disconnect:
+      console.log(
+        "Client disconnected",
+        event.peer.address.host,
+        event.peer.address.port,
+      );
+      break;
 
-      case ENetEventType.receive:
-        console.log(
-          "Packet received from channel",
-          event.channelID,
-          event.packet.data
-        );
-        // Clean up the packet now that we're done using it.
-        enet.packet.destroy(event.packet);
-        break;
-    }
+    case ENetEventType.receive:
+      console.log(
+        "Packet received from channel",
+        event.channelID,
+        event.packet.data,
+      );
+      // Clean up the packet now that we're done using it.
+      enet.packet.destroy(event.packet);
+      break;
   }
-});
+}
 ```
 
 ### Sending a packet to an ENet peer
@@ -184,7 +179,7 @@ setInterval((): void => {
 // Create a reliable packet of size 7 containing "packet\0"
 const packet: IENetPacket | null = enet.packet.create(
   Buffer.from("packet\0"),
-  ENetPacketFlag.reliable
+  ENetPacketFlag.reliable,
 );
 
 /* Send the packet to the peer over channel id 0.
@@ -205,20 +200,18 @@ if (packet) {
 ```ts
 enet.peer.disconnect(peer, 0);
 /* Allow up to 3 seconds for the disconnect to succeed
- * and drop any packets received packets.
+ * and drop any received packets.
  */
-const event: IENetEvent | null = enet.host.service(host, 3000);
+const event: IENetEvent = enet.host.service(host, 3000);
 
-if (event) {
-  switch (event.type) {
-    case ENetEventType.disconnect:
-      console.log("Disconnection succeeded.");
-      return;
+switch (event.type) {
+  case ENetEventType.disconnect:
+    console.log("Disconnection succeeded.");
+    return;
 
-    case ENetEventType.receive:
-      enet.packet.destroy(packet);
-      break;
-  }
+  case ENetEventType.receive:
+    enet.packet.destroy(packet);
+    break;
 }
 /* We've arrived here, so the disconnect attempt didn't
  * succeed yet. Force the connection down.
@@ -238,18 +231,17 @@ const address: IENetAddress = { host: "127.0.0.1", port: 1234 };
 const peer: IENetPeer | null = enet.host.connect(host, address, 2, 0);
 
 if (peer === null) {
-   console.error("No available peers for initiating an ENet connection");
-   process.exit(1);
+  console.error("No available peers for initiating an ENet connection");
+  process.exit(1);
 }
 
 // Wait up to 5 seconds for the connection attempt to succeed.
-const event: IENetEvent | null = enet.host.service(host, 5000);
+const event: IENetEvent = enet.host.service(host, 5000);
 
-if (event && event.type === ENetEventType.connect) {
+if (event.type === ENetEventType.connect) {
   console.log("Connection to 127.0.0.1:1234 succeeded.");
 
   // ...
-
 } else {
   /* Either the 5 seconds are up or a disconnect event was
    * received. Reset the peer in the event the 5 seconds
@@ -263,8 +255,8 @@ if (event && event.type === ENetEventType.connect) {
 ## Docs
 
 This package aims to serve only as a compatibility layer without expanding the
-functionality, which means the functions and data structures mirror the
-native ones, whose docs can be found at <http://enet.bespin.org/>.
+functionality, which means the functions and data structures mirror the native
+ones, whose docs can be found at <http://enet.bespin.org/>.
 
 This package also provides [TypeScript](https://www.typescriptlang.org/) type
 definitions to help ensure proper usage.

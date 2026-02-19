@@ -1,47 +1,47 @@
-import ref from "ref-napi";
+import koffi from "koffi";
 
-import { ENetEventType } from "./enums";
+import { ENetEventType } from "./enums.js";
 import {
+  enetPacket,
+  enetPeer,
   enet_host_broadcast,
   enet_host_connect,
   enet_host_create,
   enet_host_destroy,
   enet_host_flush,
   enet_host_service,
-} from "./native";
-import type { enetHost, enetPacket, enetPeer } from "./native/structs";
-import { enetAddress, enetEvent } from "./native/structs";
+} from "./native/index.js";
 import type {
   IENetAddress,
   IENetEvent,
   IENetHost,
   IENetPacket,
   IENetPeer,
-} from "./structs";
-import { ipFromLong, ipToLong } from "./util";
+} from "./structs.js";
+import { ipFromLong, ipToLong } from "./util.js";
 
 const broadcast = (
   host: IENetHost,
   channelID: number,
-  packet: IENetPacket
+  packet: IENetPacket,
 ): void => {
   enet_host_broadcast(host.native, channelID, packet.native);
 };
 
-const formatAddress = (
-  address: IENetAddress
-): ref.Pointer<ReturnType<typeof enetAddress>> =>
-  enetAddress({
+const formatAddress = (address: IENetAddress): { host: number; port: number } =>
+  ({
     host: ipToLong(address.host),
     port: address.port,
-  }).ref();
+  }) as const;
 
-const formatPeer = (
-  peer: ref.Pointer<ReturnType<typeof enetPeer>>
-): IENetPeer => {
-  const peerAttributes = ref.deref(peer);
+const formatPeer = (peer: object): IENetPeer => {
+  const peerAttributes = koffi.decode(peer, enetPeer) as {
+    address: { host: number; port: number };
+    mtu: number;
+  };
   const peerAddress = peerAttributes.address;
-  const peerObject = {
+
+  return {
     address: {
       host: ipFromLong(peerAddress.host),
       port: peerAddress.port,
@@ -49,51 +49,26 @@ const formatPeer = (
     mtu: peerAttributes.mtu,
     native: peer,
   };
-
-  // eslint-disable-next-line fp/no-mutating-methods
-  Object.defineProperty(peerObject, "mtu", {
-    get: () => peerAttributes.mtu,
-    set: (value: number): void => {
-      // eslint-disable-next-line fp/no-mutating-assign
-      Object.assign(peerAttributes, { mtu: value });
-    },
-  });
-
-  return peerObject;
 };
 
 const connect = (
   host: IENetHost,
   address: IENetAddress,
   channelCount: number,
-  data: number
+  data: number,
 ): IENetPeer | null => {
   const peer = enet_host_connect(
     host.native,
     formatAddress(address),
     channelCount,
-    data
-  );
+    data,
+  ) as object | null;
 
-  return formatPeer(peer);
-};
-
-const formatNullableAddress = (
-  address: IENetAddress | null
-): ref.Pointer<ReturnType<typeof enetAddress>> | ref.Value<null> => {
-  if (address === null) {
-    return ref.NULL;
+  if (!peer) {
+    return null;
   }
 
-  return formatAddress(address);
-};
-
-const formatHost = (
-  host: ref.Pointer<ReturnType<typeof enetHost>>
-): IENetHost => {
-  return {
-    native: host,
-  };
+  return formatPeer(peer);
 };
 
 const create = (
@@ -101,21 +76,21 @@ const create = (
   peerCount: number,
   channelLimit: number,
   incomingBandwidth: number,
-  outgoingBandwidth: number
+  outgoingBandwidth: number,
 ): IENetHost | null => {
   const host = enet_host_create(
-    formatNullableAddress(address),
+    address ? formatAddress(address) : null,
     peerCount,
     channelLimit,
     incomingBandwidth,
-    outgoingBandwidth
-  );
+    outgoingBandwidth,
+  ) as object | null;
 
-  if (ref.isNull(host)) {
+  if (!host) {
     return null;
   }
 
-  return formatHost(host);
+  return { native: host };
 };
 
 const destroy = (host: IENetHost): void => {
@@ -126,66 +101,68 @@ const flush = (host: IENetHost): void => {
   enet_host_flush(host.native);
 };
 
-const formatPacket = (
-  packet: ref.Pointer<ReturnType<typeof enetPacket>>
-): IENetPacket => {
-  const packetAttributes = ref.deref(packet);
-
-  // Workaround to properly set the actual size of each packet
-  // eslint-disable-next-line fp/no-mutating-assign
-  Object.assign(packetAttributes.data.type, {
-    size: packetAttributes.dataLength,
-  });
+const formatPacket = (packet: object): IENetPacket => {
+  const packetAttributes = koffi.decode(packet, enetPacket) as {
+    data: Buffer;
+    dataLength: number;
+    flags: number;
+    referenceCount: number;
+  };
+  const dataView = koffi.view(
+    packetAttributes.data,
+    packetAttributes.dataLength,
+  );
 
   return {
-    data: packetAttributes.data,
-    dataLength: Number(packetAttributes.dataLength),
-    flags: packetAttributes.flags,
+    ...packetAttributes,
+    data: Buffer.from(dataView),
     native: packet,
-    referenceCount: Number(packetAttributes.referenceCount),
   };
 };
 
-const formatEvent = (
-  event: ref.Pointer<ReturnType<typeof enetEvent>>
-): IENetEvent => {
-  const eventAttributes = ref.deref(event);
-  const baseAttributes = {
-    channelID: eventAttributes.channelID,
-    data: eventAttributes.data,
-    native: event,
-    type: eventAttributes.type,
+const formatEvent = (event: object): IENetEvent => {
+  const eventAttributes = event as {
+    channelID: number;
+    data: number;
+    packet: null | object;
+    peer: null | object;
+    type: ENetEventType;
   };
 
   if (eventAttributes.type === ENetEventType.none) {
-    return { ...baseAttributes, packet: null, peer: null };
+    return {
+      ...eventAttributes,
+      native: event,
+      packet: null,
+      peer: null,
+      type: ENetEventType.none,
+    };
   }
 
   if (eventAttributes.type === ENetEventType.receive) {
     return {
-      ...baseAttributes,
-      packet: formatPacket(eventAttributes.packet),
-      peer: formatPeer(eventAttributes.peer),
+      ...eventAttributes,
+      native: event,
+      packet: formatPacket(eventAttributes.packet!),
+      peer: formatPeer(eventAttributes.peer!),
+      type: ENetEventType.receive,
     };
   }
 
   return {
-    ...baseAttributes,
-    peer: formatPeer(eventAttributes.peer),
+    ...eventAttributes,
+    native: event,
+    packet: null,
+    peer: formatPeer(eventAttributes.peer!),
+    type: eventAttributes.type,
   };
 };
 
-const service = (host: IENetHost, timeout: number): IENetEvent | null => {
-  const event = ref.alloc(enetEvent) as unknown as ref.Pointer<
-    ReturnType<typeof enetEvent>
-  >;
-  const pendingEvents = enet_host_service(host.native, event, timeout);
+const service = (host: IENetHost, timeout: number): IENetEvent => {
+  const event = {};
+  enet_host_service(host.native, event, timeout);
 
-  if (pendingEvents > 0) {
-    return formatEvent(event);
-  }
-
-  return null;
+  return formatEvent(event);
 };
 
 export { broadcast, connect, create, destroy, flush, service };

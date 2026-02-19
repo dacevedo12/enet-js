@@ -1,46 +1,42 @@
 stages:
   - lint
+  - test
   - publish
 
-.node: &node
-  image: node:12@sha256:02dee4fa1ef5483dbab3e85aca88eecd51818ec7a97dc521d938d4504fa5b5ec
+.nix-base: &nix-base
+  image: nixos/nix
+  before_script:
+    - echo "extra-experimental-features = nix-command flakes" >> /etc/nix/nix.conf
 
 .dev-only: &dev-only
-  rules:
-    - if: '$CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH && $CI_PIPELINE_SOURCE == "push"'
+  except:
+    - "1.3"
+  only:
+    - branches
 
 .prod-only: &prod-only
-  rules:
-    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $CI_PIPELINE_SOURCE == "push"'
+  only:
+    - "1.3"
 
-lint-code:
-  <<: *dev-only
-  <<: *node  
+enet-lint:
+  <<: [*nix-base, *dev-only]
   script:
-    - npm install
-    - npm run lint-code
+    - nix run .#enet-lint
   stage: lint
 
-lint-docs:
-  <<: *dev-only
-  <<: *node
+enet-test:
+  <<: [*nix-base, *dev-only]
   script:
-    - npm install
-    - npm run lint-docs
-  stage: lint
+    - nix run .#enet-test
+  stage: test
 
-publish:
-  <<: *prod-only
-  <<: *node
+enet-publish:
+  <<: [*nix-base, *prod-only]
+  id_tokens:
+    NPM_ID_TOKEN:
+      aud: "npm:registry.npmjs.org"
+    SIGSTORE_ID_TOKEN:
+      aud: sigstore
   script:
-    - npm install
-    - |
-      if git diff "${CI_COMMIT_BEFORE_SHA}" package.json | grep '+  "version"'
-      then
-          npm config set -- "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" \
-          &&  npm set unsafe-perm true \
-          &&  npm publish
-      else
-          echo "Version didn't change, skipping publish..."
-      fi
+    - nix run .#enet-publish
   stage: publish

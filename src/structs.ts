@@ -1,12 +1,4 @@
-import type ref from "ref-napi";
-
-import type { ENetEventType, ENetPacketFlag } from "./enums";
-import type {
-  enetEvent,
-  enetHost,
-  enetPacket,
-  enetPeer,
-} from "./native/structs";
+import type { ENetEventType, ENetPacketFlag } from "./enums.js";
 
 interface IENetAddress {
   host: string;
@@ -16,7 +8,7 @@ interface IENetAddress {
 interface IENetEventBase {
   channelID: number;
   data: number;
-  native: ref.Pointer<ReturnType<typeof enetEvent>>;
+  native: object;
 }
 
 interface IENetEventEmpty extends IENetEventBase {
@@ -32,29 +24,29 @@ interface IENetEventWithPacket extends IENetEventBase {
 }
 
 interface IENetEventWithPeer extends IENetEventBase {
+  packet: null;
   peer: IENetPeer;
   type: ENetEventType.connect | ENetEventType.disconnect;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-type-alias
 type IENetEvent = IENetEventEmpty | IENetEventWithPacket | IENetEventWithPeer;
 
 interface IENetHost {
-  native: ref.Pointer<ReturnType<typeof enetHost>>;
+  native: object;
 }
 
 interface IENetPacket {
   data: Buffer;
   dataLength: number;
   flags: ENetPacketFlag;
-  native: ref.Pointer<ReturnType<typeof enetPacket>>;
+  native: object;
   referenceCount: number;
 }
 
 interface IENetPeer {
   address: IENetAddress;
   mtu: number;
-  native: ref.Pointer<ReturnType<typeof enetPeer>>;
+  native: object;
 }
 
 export type { IENetAddress, IENetEvent, IENetHost, IENetPacket, IENetPeer };
