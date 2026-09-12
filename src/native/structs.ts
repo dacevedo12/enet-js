@@ -16,6 +16,7 @@ const enetPacket = koffi.struct("ENetPacket", {
   data: "uint8 *",
   dataLength: koffi.types.size_t,
   freeCallback: "void *",
+  userData: "void *",
 });
 
 const enetListNode = koffi.struct("ENetListNode", {
@@ -85,20 +86,20 @@ const enetPeer = koffi.struct("ENetPeer", {
   highestRoundTripTimeVariance: enetUint32,
   roundTripTime: enetUint32,
   roundTripTimeVariance: enetUint32,
-  mtu: enetUint16,
+  mtu: enetUint32,
   windowSize: enetUint32,
   reliableDataInTransit: enetUint32,
   outgoingReliableSequenceNumber: enetUint16,
   acknowledgements: enetList,
   sentReliableCommands: enetList,
-  sentUnreliableCommands: enetList,
+  outgoingSendReliableCommands: enetList,
   outgoingCommands: enetList,
   dispatchedCommands: enetList,
   flags: enetUint16,
   reserved: enetUint16,
   incomingUnsequencedGroup: enetUint16,
   outgoingUnsequencedGroup: enetUint16,
-  unsequencedWindow: enetUint32,
+  unsequencedWindow: koffi.array(enetUint32, 32),
   eventData: enetUint32,
   totalWaitingData: koffi.types.size_t,
 });
