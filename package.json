@@ -1,7 +1,7 @@
 {
-  "author": "https://gitlab.com/dacevedo",
+  "author": "https://github.com/dacevedo12",
   "bugs": {
-    "url": "https://gitlab.com/dacevedo/enet-js/issues"
+    "url": "https://github.com/dacevedo12/enet-js/issues"
   },
   "dependencies": {
     "koffi": "^2.15.1"
@@ -35,7 +35,7 @@
   "files": [
     "dist"
   ],
-  "homepage": "https://gitlab.com/dacevedo/enet-js",
+  "homepage": "https://github.com/dacevedo12/enet-js",
   "keywords": [
     "backend",
     "enet",
@@ -47,7 +47,7 @@
   "name": "enet-js",
   "repository": {
     "type": "git",
-    "url": "git+https://gitlab.com/dacevedo/enet-js.git"
+    "url": "git+https://github.com/dacevedo12/enet-js.git"
   },
   "scripts": {
     "build": "rm -rf ./dist/ && tsc --project tsconfig.build.json",
