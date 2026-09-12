@@ -1,7 +1,7 @@
 import { execFileSync } from "node:child_process";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
 
 import koffi from "koffi";
 import { afterAll, describe, expect, it } from "vitest";
@@ -20,9 +20,13 @@ interface StructLayout {
 
 type NativeType = (typeof structs)[keyof typeof structs];
 
-const enetIncludePath =
-  process.env.ENET_INCLUDE_PATH ??
-  join(dirname(process.env.ENET_LIB_PATH ?? ""), "..", "include");
+const enetIncludePath = process.env.ENET_INCLUDE_PATH;
+
+if (enetIncludePath === undefined) {
+  throw Error(
+    "ENET_INCLUDE_PATH is not set; set it to the directory containing enet/enet.h",
+  );
+}
 
 const workDirectory = mkdtempSync(join(tmpdir(), "enet-js-layout-"));
 
