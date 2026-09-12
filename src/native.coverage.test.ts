@@ -1,13 +1,17 @@
 import { readFileSync, readdirSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
 import * as native from "./native/index.js";
 
-const enetIncludePath =
-  process.env.ENET_INCLUDE_PATH ??
-  join(dirname(process.env.ENET_LIB_PATH ?? ""), "..", "include");
+const enetIncludePath = process.env.ENET_INCLUDE_PATH;
+
+if (enetIncludePath === undefined) {
+  throw Error(
+    "ENET_INCLUDE_PATH is not set; set it to the directory containing enet/enet.h",
+  );
+}
 
 // ENet functions that are not bound yet, remove each one once it is bound
 const unbound = new Set([
