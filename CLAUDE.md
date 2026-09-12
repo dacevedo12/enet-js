@@ -33,16 +33,15 @@ ENET_LIB_PATH=/path/to/libenet.0.dylib node your-app.js
 
 ## Test Requirements
 
-Besides `ENET_LIB_PATH`, tests need the ENet headers and a C compiler:
+Besides `ENET_LIB_PATH`, tests need `ENET_INCLUDE_PATH` set to the directory
+containing `enet/enet.h`, and a C compiler (`CC`, default `cc`):
 
 - `src/native.layout.test.ts` compiles a small C program against `enet/enet.h`
   and compares `sizeof`/`offsetof` with the Koffi struct declarations
 - `src/native.coverage.test.ts` checks the bound functions against the
   `ENET_API` functions declared in the headers
 
-Headers are read from `ENET_INCLUDE_PATH`, which defaults to `../include`
-relative to the directory of `ENET_LIB_PATH`. The compiler is `CC` (default
-`cc`).
+`nix run .#enet-test` sets both variables and provides the compiler.
 
 ## Architecture
 
