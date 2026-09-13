@@ -1,50 +1,64 @@
-/* eslint-disable @typescript-eslint/naming-convention */
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+import { createPacket, withEnet } from "./fixtures.js";
+import { enet_packet_create } from "./native/index.js";
+import { nonNull } from "./util.js";
 
 import { ENetPacketFlag, enet } from "./index.js";
 
-describe("packet", () => {
-  beforeEach(() => {
-    enet.initialize();
-  });
+const TEXT = "hello";
+const BINARY = Buffer.from("00ff42dead", "hex");
+const flagCases = [
+  { flag: ENetPacketFlag.none, label: "none" },
+  { flag: ENetPacketFlag.reliable, label: "reliable" },
+  { flag: ENetPacketFlag.unsequenced, label: "unsequenced" },
+] as const;
 
-  afterEach(() => {
-    enet.deinitialize();
-  });
+const failingPacketCreate: typeof enet_packet_create = Object.assign(
+  (): null => null,
+  { async: enet_packet_create.async, info: enet_packet_create.info },
+);
 
-  describe("create", () => {
-    it.each([
-      { flag: ENetPacketFlag.none, label: "none" },
-      { flag: ENetPacketFlag.reliable, label: "reliable" },
-      { flag: ENetPacketFlag.unsequenced, label: "unsequenced" },
-    ])("creates a packet with $label flag", ({ flag }) => {
-      const data = Buffer.from("hello");
-      const packet = enet.packet.create(data, flag);
-      expect(packet).not.toBeNull();
-      expect(packet!.flags).toBe(flag);
-      expect(packet!.data.toString()).toBe("hello");
-      enet.packet.destroy(packet!);
-    });
+describe("packet create", () => {
+  it.each(flagCases)("creates a packet with the $label flag", ({ flag }) => {
+    withEnet(() => {
+      const packet = createPacket(Buffer.from(TEXT), flag);
 
-    it("preserves binary data", () => {
-      const data = Buffer.from([0x00, 0xff, 0x42, 0xde, 0xad]);
-      const packet = enet.packet.create(data)!;
-      expect(packet.dataLength).toBe(5);
-      expect(packet.data).toEqual(data);
+      expect(packet.flags).toBe(flag);
+      expect(packet.data.toString()).toBe(TEXT);
+
       enet.packet.destroy(packet);
     });
+  });
 
-    it("returns null when native enet_packet_create returns null", async () => {
-      vi.resetModules();
+  it("preserves binary data with the default flags", () => {
+    withEnet(() => {
+      const packet = nonNull(
+        enet.packet.create(BINARY),
+        "Unable to create a packet",
+      );
 
-      vi.doMock("./native/index.js", () => ({
-        ENetPacket: {},
-        enet_packet_create: (): null => null,
-        enet_packet_destroy: (): void => undefined,
-      }));
+      expect(packet).toMatchObject({
+        dataLength: BINARY.length,
+        flags: ENetPacketFlag.none,
+      });
+      expect(packet.data).toStrictEqual(BINARY);
 
-      const { create } = await import("./packet.js");
-      expect(create(Buffer.from("test"))).toBeNull();
+      enet.packet.destroy(packet);
     });
+  });
+});
+
+describe("packet create failure", () => {
+  it("returns null when enet_packet_create returns NULL", async () => {
+    vi.resetModules();
+    vi.doMock(import("./native/index.js"), () => ({
+      // eslint-disable-next-line @typescript-eslint/naming-convention -- mocks the native enet_packet_create binding
+      enet_packet_create: failingPacketCreate,
+    }));
+
+    const { create } = await import("./packet.js");
+
+    expect(create(BINARY)).toBeNull();
   });
 });

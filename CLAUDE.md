@@ -43,6 +43,9 @@ containing `enet/enet.h`, and a C compiler (`CC`, default `cc`):
 
 `nix run .#enet-test` sets both variables and provides the compiler.
 
+Shared test helpers live in `src/fixtures.ts` (ENet hosts, peers and packets),
+which is excluded from the build and coverage.
+
 ## Architecture
 
 ### Module Structure

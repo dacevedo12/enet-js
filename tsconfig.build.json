@@ -9,5 +9,6 @@
   },
   "exclude": [
     "./src/**/*.test.ts",
+    "./src/fixtures.ts",
   ],
 }
