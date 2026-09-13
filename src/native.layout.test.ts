@@ -1,49 +1,35 @@
-import { execFileSync } from "node:child_process";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { execFile } from "node:child_process";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import path from "node:path";
+import { promisify } from "node:util";
 
-import { afterAll, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import * as structs from "./native/structs.js";
 
 interface FieldLayout {
-  offset: number;
-  size: number;
+  readonly offset: number;
+  readonly size: number;
 }
 
 interface StructLayout {
-  fields: Record<string, FieldLayout>;
-  size: number;
+  readonly fields: Readonly<Record<string, FieldLayout>>;
+  readonly size: number;
 }
 
-type NativeType = (typeof structs)[keyof typeof structs];
+// eslint-disable-next-line @typescript-eslint/strict-void-return -- util.promisify(execFile) is Node's documented promise API for execFile
+const execFileAsync = promisify(execFile);
 
 const enetIncludePath = process.env.ENET_INCLUDE_PATH;
 
 if (enetIncludePath === undefined) {
-  throw Error(
+  throw new Error(
     "ENET_INCLUDE_PATH is not set; set it to the directory containing enet/enet.h",
   );
 }
 
-const workDirectory = mkdtempSync(join(tmpdir(), "enet-js-layout-"));
-
-const koffiLayout = (type: NativeType): StructLayout => {
-  const { members = {}, size } = type;
-
-  return {
-    fields: Object.fromEntries(
-      Object.values(members).map(({ name, offset, type: memberType }) => [
-        name,
-        { offset, size: memberType.size },
-      ]),
-    ),
-    size,
-  };
-};
-
-const layoutProgram = (struct: string, fields: string[]): string =>
+const layoutProgram = (struct: string, fields: readonly string[]): string =>
   [
     "#include <stddef.h>",
     "#include <stdio.h>",
@@ -58,47 +44,68 @@ const layoutProgram = (struct: string, fields: string[]): string =>
     "}",
   ].join("\n");
 
-const cLayout = (struct: string, fields: string[]): StructLayout => {
-  const source = join(workDirectory, `${struct}.c`);
-  const binary = join(workDirectory, struct);
+const parseLayout = (output: string): StructLayout => {
+  const [sizeLine = "", ...fieldLines] = output.trim().split("\n");
+  const [, size = ""] = sizeLine.split(" ");
+  const fields: Record<string, FieldLayout> = {};
 
-  writeFileSync(source, layoutProgram(struct, fields));
-  execFileSync(
-    process.env.CC ?? "cc",
-    ["-I", enetIncludePath, "-o", binary, source],
-    { stdio: "pipe" },
-  );
+  for (const line of fieldLines) {
+    const [name = "", offset = "", fieldSize = ""] = line.split(" ");
 
-  const [sizeLine = "", ...fieldLines] = execFileSync(binary, {
-    encoding: "utf8",
-  })
-    .trim()
-    .split("\n");
+    fields[name] = { offset: Number(offset), size: Number(fieldSize) };
+  }
 
-  return {
-    fields: Object.fromEntries(
-      fieldLines.map((line) => {
-        const [name = "", offset = "", size = ""] = line.split(" ");
-
-        return [name, { offset: Number(offset), size: Number(size) }];
-      }),
-    ),
-    size: Number(sizeLine.split(" ")[1]),
-  };
+  return { fields, size: Number(size) };
 };
 
+const cLayout = async (
+  struct: string,
+  fields: readonly string[],
+): Promise<StructLayout> => {
+  const workDirectory = await mkdtemp(path.join(tmpdir(), "enet-js-layout-"));
+
+  try {
+    const source = path.join(workDirectory, `${struct}.c`);
+    const binary = path.join(workDirectory, struct);
+
+    await writeFile(source, layoutProgram(struct, fields));
+    await execFileAsync(process.env.CC ?? "cc", [
+      "-I",
+      enetIncludePath,
+      "-o",
+      binary,
+      source,
+    ]);
+
+    const { stdout } = await execFileAsync(binary);
+
+    return parseLayout(stdout);
+  } finally {
+    await rm(workDirectory, { force: true, recursive: true });
+  }
+};
+
+const koffiLayouts = new Map<string, StructLayout>();
+
+for (const type of Object.values(structs)) {
+  if (typeof type === "object" && type.primitive === "Record") {
+    const fields: Record<string, FieldLayout> = {};
+
+    for (const member of Object.values(type.members ?? {})) {
+      fields[member.name] = { offset: member.offset, size: member.type.size };
+    }
+
+    koffiLayouts.set(type.name, { fields, size: type.size });
+  }
+}
+
 describe("native layout", () => {
-  const records = Object.values(structs)
-    .filter((type) => type.primitive === "Record")
-    .map((type): [string, NativeType] => [type.name, type]);
-
-  afterAll(() => {
-    rmSync(workDirectory, { force: true, recursive: true });
-  });
-
-  it.each(records)("%s matches the C layout", (name, type) => {
-    const declared = koffiLayout(type);
-
-    expect(declared).toEqual(cLayout(name, Object.keys(declared.fields)));
-  });
+  it.each([...koffiLayouts])(
+    "%s matches the C layout",
+    async (name, declared) => {
+      expect(declared).toStrictEqual(
+        await cLayout(name, Object.keys(declared.fields)),
+      );
+    },
+  );
 });
