@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { createPacket, withEnet } from "./fixtures.js";
 import { ENetPacketFlag, enet } from "./index.js";
-import { enet_packet_create } from "./native/index.js";
+import { enetPacket, enet_packet_create } from "./native/index.js";
 import { nonNull } from "./util.js";
 
 vi.setConfig({ testTimeout: 10_000 });
@@ -60,6 +60,7 @@ describe("packet create failure", () => {
 
     vi.resetModules();
     vi.doMock(import("./native/index.js"), () => ({
+      enetPacket,
       enet_packet_create: failingPacketCreate,
     }));
 

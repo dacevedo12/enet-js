@@ -64,34 +64,33 @@ structure:
 ### Native Bindings Layer (`src/native/`)
 
 - `native/structs.ts` - Koffi struct definitions matching C ENet structures
-  (ENetAddress, ENetPacket, ENetPeer, ENetEvent, etc.), plus typed decoders
+  (ENetAddress, ENetPacket, ENetPeer, ENetEvent, etc.)
 - `native/enums.ts` - ENet enum values, re-exported by `src/enums.ts`
-- `native/pointers.ts` - `NativePointer`, the per-struct pointer type
+- `native/pointers.ts` - `NativePointer`, the per-struct pointer type, since
+  Koffi 3 pointers are plain BigInts that Koffi doesn't type-check
 - `native/index.ts` - FFI function bindings using `koffi.load()` to call native
   ENet functions
 - When binding a new ENet function, remove it from the `unbound` list in
   `src/native.coverage.test.ts`
 
-### TypeScript Wrapper Layer
+### Handles
 
-Each wrapper module (host.ts, packet.ts, peer.ts) converts between:
+Wrapper modules (host.ts, packet.ts, peer.ts) hand out handles: thin objects over
+ENet's structs that don't expose pointers or Koffi.
 
-- **JS interface types** (`IENetHost`, `IENetPeer`, `IENetPacket`) - user-facing
-  with string IPs and Buffer data
-- **Native types** - Koffi pointers (BigInts) and numeric representations
-
-Key conversions:
-
-- IP addresses: string format ↔ 32-bit integer (via `util.ts`
-  ipToLong/ipFromLong)
-- Packet data: Buffer ↔ native pointer + length
-- All native resources wrapped with a `native` property holding the pointer,
-  typed per struct (`NativePointer<"ENetHost">` etc. in `structs.ts`) because
-  Koffi 3 pointers are plain BigInts that Koffi doesn't type-check at runtime
+- The pointer is stored under the `nativePointer` symbol from `structs.ts`,
+  which the package doesn't export. Field getters live on a shared prototype and
+  read ENet's memory with `koffi.decode` at `koffi.offsetof` offsets
+- enet-js stays a thin layer over C by design: it doesn't validate handles or
+  track lifetimes, and misuse fails as it would in C. Don't add such checks
+- `host.ts` keeps one peer object per peer pointer for each host, so peers
+  compare like `ENetPeer *` in C
+- `packet.data` is a `Buffer` over the packet's memory, like `packet->data`
+- IP addresses convert between strings and 32-bit integers in `util.ts`
 
 ### Type Definitions (`src/structs.ts`)
 
-Defines TypeScript interfaces for all ENet structures. Event types use
+Defines the public handle, address and event types. Event types use
 discriminated unions based on `ENetEventType`:
 
 - `IENetEventEmpty` (type: none)
