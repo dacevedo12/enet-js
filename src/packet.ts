@@ -12,14 +12,16 @@ const create = (
   data: Buffer,
   flags: ENetPacketFlag = ENetPacketFlag.none,
 ): IENetPacket | null => {
-  const packet = enet_packet_create(data, data.length, flags) as object | null;
+  const packet = enet_packet_create(data, data.length, flags) as
+    | IENetPacket["native"]
+    | null;
 
-  if (!packet) {
+  if (packet === null) {
     return null;
   }
 
   const packetAttributes = koffi.decode(packet, enetPacket) as {
-    data: Buffer;
+    data: bigint;
     referenceCount: number;
     flags: number;
     dataLength: number;

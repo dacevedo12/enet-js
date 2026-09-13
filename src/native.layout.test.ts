@@ -3,7 +3,6 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import koffi from "koffi";
 import { afterAll, describe, expect, it } from "vitest";
 
 import * as structs from "./native/structs.js";
@@ -31,13 +30,13 @@ if (enetIncludePath === undefined) {
 const workDirectory = mkdtempSync(join(tmpdir(), "enet-js-layout-"));
 
 const koffiLayout = (type: NativeType): StructLayout => {
-  const { members = {}, size } = koffi.introspect(type);
+  const { members = {}, size } = type;
 
   return {
     fields: Object.fromEntries(
       Object.values(members).map(({ name, offset, type: memberType }) => [
         name,
-        { offset, size: koffi.sizeof(memberType) },
+        { offset, size: memberType.size },
       ]),
     ),
     size,
@@ -90,8 +89,8 @@ const cLayout = (struct: string, fields: string[]): StructLayout => {
 
 describe("native layout", () => {
   const records = Object.values(structs)
-    .filter((type) => koffi.introspect(type).primitive === "Record")
-    .map((type): [string, NativeType] => [koffi.introspect(type).name, type]);
+    .filter((type) => type.primitive === "Record")
+    .map((type): [string, NativeType] => [type.name, type]);
 
   afterAll(() => {
     rmSync(workDirectory, { force: true, recursive: true });
