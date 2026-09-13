@@ -1,9 +1,12 @@
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
+// oxlint-disable-next-line import/no-namespace -- the test compares every export of the bindings module with enet.h
 import * as native from "./native/index.js";
+
+vi.setConfig({ testTimeout: 10_000 });
 
 const ENET_API_PATTERN = /ENET_API\s[\w\s*]*?\b(?<name>enet_\w+)\s*\(/gu;
 
@@ -106,18 +109,24 @@ const findCoverage = async (): Promise<Coverage> => {
 
 describe("native coverage", () => {
   it("binds every declared function not listed as unbound", async () => {
+    expect.hasAssertions();
+
     const { unlisted } = await findCoverage();
 
     expect(unlisted).toStrictEqual([]);
   });
 
   it("binds only functions that the headers declare", async () => {
+    expect.hasAssertions();
+
     const { undeclared } = await findCoverage();
 
     expect(undeclared).toStrictEqual([]);
   });
 
   it("lists as unbound only declared functions that are not bound", async () => {
+    expect.hasAssertions();
+
     const { stale } = await findCoverage();
 
     expect(stale).toStrictEqual([]);

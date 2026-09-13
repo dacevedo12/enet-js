@@ -2,53 +2,53 @@ import type { ENetEventType } from "./enums.js";
 import type { NativePointer } from "./native/pointers.js";
 
 interface IENetAddress {
-  host: string;
-  port: number;
+  readonly host: string;
+  readonly port: number;
 }
 
 interface IENetEventBase {
-  channelID: number;
-  data: number;
-  native: object;
+  readonly channelID: number;
+  readonly data: number;
+  readonly native: object;
 }
 
 interface IENetEventEmpty extends IENetEventBase {
-  packet: null;
-  peer: null;
-  type: typeof ENetEventType.none;
+  readonly packet: null;
+  readonly peer: null;
+  readonly type: typeof ENetEventType.none;
 }
 
 interface IENetEventWithPacket extends IENetEventBase {
-  packet: IENetPacket;
-  peer: IENetPeer;
-  type: typeof ENetEventType.receive;
+  readonly packet: IENetPacket;
+  readonly peer: IENetPeer;
+  readonly type: typeof ENetEventType.receive;
 }
 
 interface IENetEventWithPeer extends IENetEventBase {
-  packet: null;
-  peer: IENetPeer;
-  type: typeof ENetEventType.connect | typeof ENetEventType.disconnect;
+  readonly packet: null;
+  readonly peer: IENetPeer;
+  readonly type: typeof ENetEventType.connect | typeof ENetEventType.disconnect;
 }
 
 type IENetEvent = IENetEventEmpty | IENetEventWithPacket | IENetEventWithPeer;
 
 interface IENetHost {
-  native: NativePointer<"ENetHost">;
+  readonly native: NativePointer<"ENetHost">;
 }
 
 interface IENetPacket {
-  data: Buffer;
-  dataLength: number;
+  readonly data: Buffer;
+  readonly dataLength: number;
   // Bitwise OR of ENetPacketFlag values
-  flags: number;
-  native: NativePointer<"ENetPacket">;
-  referenceCount: number;
+  readonly flags: number;
+  readonly native: NativePointer<"ENetPacket">;
+  readonly referenceCount: number;
 }
 
 interface IENetPeer {
-  address: IENetAddress;
-  mtu: number;
-  native: NativePointer<"ENetPeer">;
+  readonly address: IENetAddress;
+  readonly mtu: number;
+  readonly native: NativePointer<"ENetPeer">;
 }
 
 export type { IENetAddress, IENetEvent, IENetHost, IENetPacket, IENetPeer };

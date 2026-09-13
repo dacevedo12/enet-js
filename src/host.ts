@@ -1,9 +1,10 @@
 import koffi from "koffi";
 
 import { ENetEventType } from "./enums.js";
+import type { NativeAddress, NativeEvent } from "./native/index.js";
 import {
-  enetPacket,
-  enetPeer,
+  decodePacket,
+  decodePeer,
   enet_host_broadcast,
   enet_host_connect,
   enet_host_create,
@@ -18,7 +19,9 @@ import type {
   IENetPacket,
   IENetPeer,
 } from "./structs.js";
-import { ipFromLong, ipToLong } from "./util.js";
+import { ipFromLong, ipToLong, nonNull } from "./util.js";
+
+const UNSET = 0;
 
 const broadcast = (
   host: IENetHost,
@@ -28,25 +31,20 @@ const broadcast = (
   enet_host_broadcast(host.native, channelID, packet.native);
 };
 
-const formatAddress = (address: IENetAddress): { host: number; port: number } =>
-  ({
-    host: ipToLong(address.host),
-    port: address.port,
-  }) as const;
+const formatAddress = (address: IENetAddress): NativeAddress => ({
+  host: ipToLong(address.host),
+  port: address.port,
+});
 
 const formatPeer = (peer: IENetPeer["native"]): IENetPeer => {
-  const peerAttributes = koffi.decode(peer, enetPeer) as {
-    address: { host: number; port: number };
-    mtu: number;
-  };
-  const peerAddress = peerAttributes.address;
+  const { address, mtu } = decodePeer(peer);
 
   return {
     address: {
-      host: ipFromLong(peerAddress.host),
-      port: peerAddress.port,
+      host: ipFromLong(address.host),
+      port: address.port,
     },
-    mtu: peerAttributes.mtu,
+    mtu,
     native: peer,
   };
 };
@@ -79,7 +77,7 @@ const create = (
   outgoingBandwidth: number,
 ): IENetHost | null => {
   const host = enet_host_create(
-    address ? formatAddress(address) : null,
+    address === null ? null : formatAddress(address),
     peerCount,
     channelLimit,
     incomingBandwidth,
@@ -102,64 +100,56 @@ const flush = (host: IENetHost): void => {
 };
 
 const formatPacket = (packet: IENetPacket["native"]): IENetPacket => {
-  const packetAttributes = koffi.decode(packet, enetPacket) as {
-    data: bigint;
-    dataLength: number;
-    flags: number;
-    referenceCount: number;
-  };
-  const dataView = koffi.view(
-    packetAttributes.data,
-    packetAttributes.dataLength,
-  );
+  const attributes = decodePacket(packet);
 
   return {
-    ...packetAttributes,
-    data: Buffer.from(dataView),
+    data: Buffer.from(koffi.view(attributes.data, attributes.dataLength)),
+    dataLength: attributes.dataLength,
+    flags: attributes.flags,
     native: packet,
+    referenceCount: attributes.referenceCount,
   };
 };
 
-const formatEvent = (event: object): IENetEvent => {
-  const eventAttributes = event as {
-    channelID: number;
-    data: number;
-    packet: IENetPacket["native"] | null;
-    peer: IENetPeer["native"] | null;
-    type: ENetEventType;
-  };
+const formatEvent = (event: NativeEvent): IENetEvent => {
+  const base = { channelID: event.channelID, data: event.data, native: event };
 
-  if (eventAttributes.type === ENetEventType.none) {
-    return {
-      ...eventAttributes,
-      native: event,
-      packet: null,
-      peer: null,
-      type: ENetEventType.none,
-    };
+  if (event.type === ENetEventType.none) {
+    return { ...base, packet: null, peer: null, type: ENetEventType.none };
   }
 
-  if (eventAttributes.type === ENetEventType.receive) {
+  if (event.type === ENetEventType.receive) {
     return {
-      ...eventAttributes,
-      native: event,
-      packet: formatPacket(eventAttributes.packet!),
-      peer: formatPeer(eventAttributes.peer!),
+      ...base,
+      packet: formatPacket(
+        nonNull(event.packet, "ENet reported a receive event without a packet"),
+      ),
+      peer: formatPeer(
+        nonNull(event.peer, "ENet reported a receive event without a peer"),
+      ),
       type: ENetEventType.receive,
     };
   }
 
   return {
-    ...eventAttributes,
-    native: event,
+    ...base,
     packet: null,
-    peer: formatPeer(eventAttributes.peer!),
-    type: eventAttributes.type,
+    peer: formatPeer(
+      nonNull(event.peer, "ENet reported a connection event without a peer"),
+    ),
+    type: event.type,
   };
 };
 
 const service = (host: IENetHost, timeout: number): IENetEvent => {
-  const event = {};
+  const event: NativeEvent = {
+    channelID: UNSET,
+    data: UNSET,
+    packet: null,
+    peer: null,
+    type: ENetEventType.none,
+  };
+
   enet_host_service(host.native, event, timeout);
 
   return formatEvent(event);
