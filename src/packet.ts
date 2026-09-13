@@ -10,11 +10,9 @@ import type { IENetPacket } from "./structs.js";
 
 const create = (
   data: Buffer,
-  flags: ENetPacketFlag = ENetPacketFlag.none,
+  flags: number = ENetPacketFlag.none,
 ): IENetPacket | null => {
-  const packet = enet_packet_create(data, data.length, flags) as
-    | IENetPacket["native"]
-    | null;
+  const packet = enet_packet_create(data, data.length, flags);
 
   if (packet === null) {
     return null;

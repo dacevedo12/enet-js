@@ -60,7 +60,7 @@ const connect = (
     host.native,
     formatAddress(address),
     channelCount,
-  ) as IENetPeer["native"] | null;
+  );
 
   if (peer === null) {
     return null;
@@ -80,7 +80,7 @@ const create = (
     peerCount,
     incomingBandwidth,
     outgoingBandwidth,
-  ) as IENetHost["native"] | null;
+  );
 
   if (host === null) {
     return null;
