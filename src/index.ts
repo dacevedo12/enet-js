@@ -3,7 +3,11 @@ import * as host from "./host.js";
 import * as packet from "./packet.js";
 import * as peer from "./peer.js";
 
-const enet = {
+const enet: typeof global & {
+  host: typeof host;
+  packet: typeof packet;
+  peer: typeof peer;
+} = {
   ...global,
   host,
   packet,
