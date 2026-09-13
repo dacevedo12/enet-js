@@ -1,10 +1,6 @@
-import koffi from "koffi";
-
 import { ENetEventType } from "./enums.js";
 import type { NativeAddress, NativeEvent } from "./native/index.js";
 import {
-  decodePacket,
-  decodePeer,
   enet_host_broadcast,
   enet_host_connect,
   enet_host_create,
@@ -12,6 +8,9 @@ import {
   enet_host_flush,
   enet_host_service,
 } from "./native/index.js";
+import type { NativePointer } from "./native/pointers.js";
+import { wrapPacket } from "./packet.js";
+import { wrapPeer } from "./peer.js";
 import type {
   IENetAddress,
   IENetEvent,
@@ -19,54 +18,66 @@ import type {
   IENetPacket,
   IENetPeer,
 } from "./structs.js";
-import { ipFromLong, ipToLong, nonNull } from "./util.js";
+import { nativePointer } from "./structs.js";
+import type { HandlePrototype } from "./util.js";
+import { createHandle, ipToLong, nonNull } from "./util.js";
 
 const UNSET = 0;
 
-const broadcast = (
-  host: IENetHost,
-  channelID: number,
-  packet: IENetPacket,
-): void => {
-  enet_host_broadcast(host.native, channelID, packet.native);
-};
+// One object per peer pointer for each host, so peers compare like ENetPeer * in C
+const hostPrototype: HandlePrototype<IENetHost> = {};
+
+const hostPeers = new Map<bigint, Map<bigint, IENetPeer>>();
 
 const formatAddress = (address: IENetAddress): NativeAddress => ({
   host: ipToLong(address.host),
   port: address.port,
 });
 
-const formatPeer = (peer: IENetPeer["native"]): IENetPeer => {
-  const { address, mtu } = decodePeer(peer);
-
-  return {
-    address: {
-      host: ipFromLong(address.host),
-      port: address.port,
-    },
-    mtu,
-    native: peer,
-  };
-};
-
-const connect = (
+const peerOf = (
   host: IENetHost,
-  address: IENetAddress,
-  channelCount: number,
-  data: number,
-): IENetPeer | null => {
-  const peer = enet_host_connect(
-    host.native,
-    formatAddress(address),
-    channelCount,
-    data,
-  );
+  pointer: NativePointer<"ENetPeer">,
+): IENetPeer => {
+  const hostPointer = host[nativePointer];
+  const peers = hostPeers.get(hostPointer) ?? new Map<bigint, IENetPeer>();
+  const known = peers.get(pointer);
 
-  if (peer === null) {
-    return null;
+  if (known !== undefined) {
+    return known;
   }
 
-  return formatPeer(peer);
+  const peer = wrapPeer(pointer);
+
+  hostPeers.set(hostPointer, peers.set(pointer, peer));
+
+  return peer;
+};
+
+const formatEvent = (host: IENetHost, event: NativeEvent): IENetEvent => {
+  const { channelID, data } = event;
+
+  if (event.type === ENetEventType.none) {
+    return { channelID, data, packet: null, peer: null, type: event.type };
+  }
+
+  const peer = peerOf(
+    host,
+    nonNull(event.peer, "ENet reported an event without a peer"),
+  );
+
+  if (event.type === ENetEventType.receive) {
+    return {
+      channelID,
+      data,
+      packet: wrapPacket(
+        nonNull(event.packet, "ENet reported a receive event without a packet"),
+      ),
+      peer,
+      type: event.type,
+    };
+  }
+
+  return { channelID, data, packet: null, peer, type: event.type };
 };
 
 const create = (
@@ -76,7 +87,7 @@ const create = (
   incomingBandwidth: number,
   outgoingBandwidth: number,
 ): IENetHost | null => {
-  const host = enet_host_create(
+  const pointer = enet_host_create(
     address === null ? null : formatAddress(address),
     peerCount,
     channelLimit,
@@ -84,61 +95,32 @@ const create = (
     outgoingBandwidth,
   );
 
-  if (host === null) {
+  if (pointer === null) {
     return null;
   }
 
-  return { native: host };
+  return createHandle<IENetHost>(hostPrototype, pointer);
 };
 
 const destroy = (host: IENetHost): void => {
-  enet_host_destroy(host.native);
+  enet_host_destroy(host[nativePointer]);
+  hostPeers.delete(host[nativePointer]);
 };
 
-const flush = (host: IENetHost): void => {
-  enet_host_flush(host.native);
-};
+const connect = (
+  host: IENetHost,
+  address: IENetAddress,
+  channelCount: number,
+  data: number,
+): IENetPeer | null => {
+  const pointer = enet_host_connect(
+    host[nativePointer],
+    formatAddress(address),
+    channelCount,
+    data,
+  );
 
-const formatPacket = (packet: IENetPacket["native"]): IENetPacket => {
-  const attributes = decodePacket(packet);
-
-  return {
-    data: Buffer.from(koffi.view(attributes.data, attributes.dataLength)),
-    dataLength: attributes.dataLength,
-    flags: attributes.flags,
-    native: packet,
-    referenceCount: attributes.referenceCount,
-  };
-};
-
-const formatEvent = (event: NativeEvent): IENetEvent => {
-  const base = { channelID: event.channelID, data: event.data, native: event };
-
-  if (event.type === ENetEventType.none) {
-    return { ...base, packet: null, peer: null, type: ENetEventType.none };
-  }
-
-  if (event.type === ENetEventType.receive) {
-    return {
-      ...base,
-      packet: formatPacket(
-        nonNull(event.packet, "ENet reported a receive event without a packet"),
-      ),
-      peer: formatPeer(
-        nonNull(event.peer, "ENet reported a receive event without a peer"),
-      ),
-      type: ENetEventType.receive,
-    };
-  }
-
-  return {
-    ...base,
-    packet: null,
-    peer: formatPeer(
-      nonNull(event.peer, "ENet reported a connection event without a peer"),
-    ),
-    type: event.type,
-  };
+  return pointer === null ? null : peerOf(host, pointer);
 };
 
 const service = (host: IENetHost, timeout: number): IENetEvent => {
@@ -150,9 +132,21 @@ const service = (host: IENetHost, timeout: number): IENetEvent => {
     type: ENetEventType.none,
   };
 
-  enet_host_service(host.native, event, timeout);
+  enet_host_service(host[nativePointer], event, timeout);
 
-  return formatEvent(event);
+  return formatEvent(host, event);
+};
+
+const flush = (host: IENetHost): void => {
+  enet_host_flush(host[nativePointer]);
+};
+
+const broadcast = (
+  host: IENetHost,
+  channelID: number,
+  packet: IENetPacket,
+): void => {
+  enet_host_broadcast(host[nativePointer], channelID, packet[nativePointer]);
 };
 
 export { broadcast, connect, create, destroy, flush, service };
