@@ -8,7 +8,6 @@ import {
   serviceUntil,
   withConnection,
 } from "./fixtures.js";
-
 import { ENetEventType, enet } from "./index.js";
 
 const PORT = 8888;

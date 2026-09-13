@@ -14,7 +14,6 @@ import {
   withEnet,
   withHosts,
 } from "./fixtures.js";
-
 import { ENetEventType, enet } from "./index.js";
 
 const PORT = 7777;

@@ -1,10 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { createPacket, withEnet } from "./fixtures.js";
+import { ENetPacketFlag, enet } from "./index.js";
 import { enet_packet_create } from "./native/index.js";
 import { nonNull } from "./util.js";
-
-import { ENetPacketFlag, enet } from "./index.js";
 
 const TEXT = "hello";
 const BINARY = Buffer.from("00ff42dead", "hex");

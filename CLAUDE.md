@@ -16,7 +16,8 @@ version.
 
 ```bash
 npm run build        # Compile TypeScript to dist/
-npm run lint-code    # Run TypeScript type-check and ESLint
+npm run format       # Format src with oxfmt
+npm run lint-code    # Type-check, lint and check formatting
 npm run lint-docs    # Run markdownlint on markdown files
 npm run test         # Run vitest tests with coverage
 ```
@@ -98,6 +99,7 @@ discriminated unions based on `ENetEventType`:
 ## Code Style
 
 - ESM modules with `.js` extensions in imports (even for TypeScript files)
-- No default exports (enforced by eslint)
-- Alphabetized imports and exports
+- No default exports (enforced by oxlint)
+- Imports sorted by oxfmt (built-in, external, then relative); exports
+  alphabetized
 - Functional style preferred (const functions, no classes)
