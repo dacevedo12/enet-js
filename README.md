@@ -259,6 +259,9 @@ ENet's memory each time you access them instead of copying it, and they never
 expose pointers or Koffi. Everything else this library returns, such as events,
 is a plain object.
 
+Fields that ENet documents as writable can be assigned, which writes to ENet's
+memory. The others are read-only.
+
 Handles follow the C API's rules on lifetimes and ownership, and enet-js doesn't
 check them. Using a handle after its memory is freed, whether you freed it or
 ENet did, is undefined behaviour and can crash the process, as it would in C.
@@ -272,6 +275,35 @@ contents.
 Buffers read from handles are views of ENet's memory, not copies, so copy one
 to keep its contents after the memory is freed. A `Buffer` you ask ENet to keep
 rather than copy must stay referenced for as long as ENet may use it.
+
+## From C to JavaScript
+
+enet-js mirrors ENet's C API, with a few mechanical translations:
+
+- **Names:** `enet_<group>_<name>` becomes `enet.<group>.<name>` in camelCase,
+  so `enet_peer_disconnect_now` is `enet.peer.disconnectNow`. Functions without
+  a group stay on `enet`, such as `enet.crc32`. Enums, constants and macros keep
+  ENet's names, such as `ENetPacketFlag`, `ENET_HOST_ANY` and
+  `ENET_VERSION_CREATE`.
+- **Out-parameters:** a function that fills in an out-parameter returns the
+  value instead, or `null` when C reports a failure. When C's return value means
+  more than success or failure, both come back in one object, such as the
+  `result` and `address` of `enet.socket.receive`. `enet.host.service` and
+  `enet.host.checkEvents` return the event.
+- **Buffers:** an `ENetBuffer` array is an array of `Buffer`s, and its length
+  replaces the count. A socket set is a `Set` of sockets, which
+  `enet.socketset.select` updates in place, as C does with `fd_set`.
+- **Application data:** `void *` fields meant for the application, such as
+  `peer.data` and `packet.userData`, hold any JavaScript value.
+- **Callbacks:** the callbacks ENet takes, such as `host.checksum`,
+  `host.intercept`, `packet.freeCallback` and compressors, are JavaScript
+  functions. Assigning `enet.crc32` to `host.checksum` stores ENet's own
+  function, so no JavaScript runs for each datagram. If a callback throws, ENet
+  sees a failure from it, and the enet-js function that was running rethrows
+  the error once ENet returns.
+- **Allocators:** `enet.initializeWithCallbacks` only takes `noMemory`.
+  JavaScript has no native memory for a `malloc` to return, so ENet keeps its
+  own allocator.
 
 ## Docs
 

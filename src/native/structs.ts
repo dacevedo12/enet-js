@@ -12,9 +12,40 @@ const ENET_PEER_RELIABLE_WINDOWS = 16;
 const ENET_PEER_UNSEQUENCED_WINDOW_SIZE = 1024;
 const UNSEQUENCED_WINDOW_WORD_BITS = 32;
 
+// ENET_PROTOCOL_MAXIMUM_PACKET_COMMANDS in protocol.h
+const ENET_PROTOCOL_MAXIMUM_PACKET_COMMANDS = 32;
+
+// ENET_BUFFER_MAXIMUM in enet.h: 1 + 2 * ENET_PROTOCOL_MAXIMUM_PACKET_COMMANDS
+const ENET_BUFFER_MAXIMUM = 65;
+
+// ENET_PROTOCOL_MAXIMUM_MTU in protocol.h, the size of each ENetHost.packetData buffer
+const ENET_PROTOCOL_MAXIMUM_MTU = 4096;
+const PACKET_DATA_BUFFERS = 2;
+
+// The size of ENetProtocol, the packed union of every protocol command
+const ENET_PROTOCOL_SIZE = 48;
+
 interface NativeAddress {
   readonly host: number;
   readonly port: number;
+}
+
+interface NativeBuffer {
+  readonly data: Buffer;
+  readonly dataLength: number;
+}
+
+interface NativeCallbacks {
+  readonly free: null;
+  readonly malloc: null;
+  readonly no_memory: bigint | null;
+}
+
+interface NativeCompressor {
+  readonly compress: bigint;
+  readonly context: bigint;
+  readonly decompress: bigint;
+  readonly destroy: bigint;
 }
 
 interface NativeEvent {
@@ -25,9 +56,31 @@ interface NativeEvent {
   readonly type: ENetEventType;
 }
 
+type Platforms<Value> = Readonly<Partial<Record<NodeJS.Platform, Value>>>;
+
 const enetUint8: TypeObject = koffi.types.uint8;
 const enetUint16: TypeObject = koffi.types.uint16;
 const enetUint32: TypeObject = koffi.types.uint32;
+
+// On Windows ENetSocket is SOCKET, a pointer-sized integer where INVALID_SOCKET reads as -1
+const socketTypes: Platforms<string> = { win32: "intptr_t" };
+
+const enetSocket: TypeObject = koffi.alias(
+  "ENetSocket",
+  socketTypes[process.platform] ?? "int",
+);
+
+// On Windows ENetBuffer is laid out like WSABUF, elsewhere like struct iovec
+const bufferMembers: Platforms<Readonly<Record<string, TypeObject | string>>> =
+  { win32: { dataLength: koffi.types.size_t, data: "void *" } };
+
+const enetBuffer: TypeObject = koffi.struct(
+  "ENetBuffer",
+  bufferMembers[process.platform] ?? {
+    data: "void *",
+    dataLength: koffi.types.size_t,
+  },
+);
 
 const enetAddress: TypeObject = koffi.struct("ENetAddress", {
   host: enetUint32,
@@ -63,11 +116,9 @@ const enetChannel: TypeObject = koffi.struct("ENetChannel", {
   incomingUnreliableCommands: enetList,
 });
 
-const enetHost: TypeObject = koffi.opaque("ENetHost");
-
 const enetPeer: TypeObject = koffi.struct("ENetPeer", {
   dispatchList: enetListNode,
-  host: "ENetHost *",
+  host: "void *",
   outgoingPeerID: enetUint16,
   incomingPeerID: enetUint16,
   connectID: enetUint32,
@@ -131,6 +182,66 @@ const enetPeer: TypeObject = koffi.struct("ENetPeer", {
   totalWaitingData: koffi.types.size_t,
 });
 
+const enetCompressor: TypeObject = koffi.struct("ENetCompressor", {
+  context: "void *",
+  compress: "void *",
+  decompress: "void *",
+  destroy: "void *",
+});
+
+const enetCallbacks: TypeObject = koffi.struct("ENetCallbacks", {
+  malloc: "void *",
+  free: "void *",
+  no_memory: "void *",
+});
+
+// Only the size and alignment of this packed union matter to ENetHost
+const enetProtocol: TypeObject = koffi.pack("ENetProtocol", {
+  bytes: koffi.array(enetUint8, ENET_PROTOCOL_SIZE),
+});
+
+const enetHost: TypeObject = koffi.struct("ENetHost", {
+  socket: enetSocket,
+  address: enetAddress,
+  incomingBandwidth: enetUint32,
+  outgoingBandwidth: enetUint32,
+  bandwidthThrottleEpoch: enetUint32,
+  mtu: enetUint32,
+  randomSeed: enetUint32,
+  recalculateBandwidthLimits: koffi.types.int,
+  peers: "ENetPeer *",
+  peerCount: koffi.types.size_t,
+  channelLimit: koffi.types.size_t,
+  serviceTime: enetUint32,
+  dispatchQueue: enetList,
+  totalQueued: enetUint32,
+  packetSize: koffi.types.size_t,
+  headerFlags: enetUint16,
+  commands: koffi.array(enetProtocol, ENET_PROTOCOL_MAXIMUM_PACKET_COMMANDS),
+  commandCount: koffi.types.size_t,
+  buffers: koffi.array(enetBuffer, ENET_BUFFER_MAXIMUM),
+  bufferCount: koffi.types.size_t,
+  checksum: "void *",
+  compressor: enetCompressor,
+  packetData: koffi.array(
+    koffi.array(enetUint8, ENET_PROTOCOL_MAXIMUM_MTU),
+    PACKET_DATA_BUFFERS,
+  ),
+  receivedAddress: enetAddress,
+  receivedData: "uint8 *",
+  receivedDataLength: koffi.types.size_t,
+  totalSentData: enetUint32,
+  totalSentPackets: enetUint32,
+  totalReceivedData: enetUint32,
+  totalReceivedPackets: enetUint32,
+  intercept: "void *",
+  connectedPeers: koffi.types.size_t,
+  bandwidthLimitedPeers: koffi.types.size_t,
+  duplicatePeers: koffi.types.size_t,
+  maximumPacketSize: koffi.types.size_t,
+  maximumWaitingData: koffi.types.size_t,
+});
+
 const enetEvent: TypeObject = koffi.struct("ENetEvent", {
   type: koffi.types.int,
   peer: "ENetPeer *",
@@ -139,16 +250,26 @@ const enetEvent: TypeObject = koffi.struct("ENetEvent", {
   packet: "ENetPacket *",
 });
 
-export type { NativeAddress, NativeEvent };
+export type {
+  NativeAddress,
+  NativeBuffer,
+  NativeCallbacks,
+  NativeCompressor,
+  NativeEvent,
+};
 export {
   enetAddress,
+  enetBuffer,
+  enetCallbacks,
   enetChannel,
+  enetCompressor,
   enetEvent,
   enetHost,
   enetList,
   enetListNode,
   enetPacket,
   enetPeer,
+  enetSocket,
   enetUint16,
   enetUint32,
   enetUint8,
