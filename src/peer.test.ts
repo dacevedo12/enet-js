@@ -1,88 +1,54 @@
-/* eslint-disable @typescript-eslint/init-declarations */
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import {
-  ENetEventType,
-  ENetPacketFlag,
-  type IENetAddress,
-  type IENetHost,
-  type IENetPeer,
-  enet,
-} from "./index.js";
+  CHANNEL,
+  createPacket,
+  localAddress,
+  receivePacket,
+  serviceUntil,
+  withConnection,
+} from "./fixtures.js";
 
-describe("peer", () => {
-  const address: IENetAddress = { host: "127.0.0.1", port: 8888 };
+import { ENetEventType, enet } from "./index.js";
 
-  let server: IENetHost;
-  let client: IENetHost;
-  let peer: IENetPeer;
+const PORT = 8888;
+const DISCONNECT_DATA = 42;
+const SEND_SUCCESS = 0;
+const MESSAGE = "test message";
+const address = localAddress(PORT);
 
-  beforeEach(() => {
-    enet.initialize();
-    server = enet.host.create(address, 32, 0, 0)!;
-    client = enet.host.create(null, 1, 0, 0)!;
-    peer = enet.host.connect(client, address, 1)!;
+describe("peer send", () => {
+  it("sends a packet to a connected peer", () => {
+    withConnection(address, ({ client, peer, server }) => {
+      const sent = createPacket(Buffer.from(MESSAGE));
 
-    let connected = false;
-    for (let i = 0; i < 100 && !connected; i++) {
-      enet.host.service(client, 5);
-      const event = enet.host.service(server, 5);
-      if (event.type === ENetEventType.connect) {
-        connected = true;
-      }
-    }
-  });
+      expect(enet.peer.send(peer, CHANNEL, sent)).toBe(SEND_SUCCESS);
 
-  afterEach(() => {
-    enet.host.destroy(client);
-    enet.host.destroy(server);
-    enet.deinitialize();
-  });
-
-  describe("send", () => {
-    it("sends a packet to a connected peer", () => {
-      const data = Buffer.from("test message");
-      const packet = enet.packet.create(data, ENetPacketFlag.reliable)!;
-      const result = enet.peer.send(peer, 0, packet);
-      expect(result).toBe(0);
       enet.host.flush(client);
 
-      let receivedData: string | null = null;
-      for (let i = 0; i < 100 && receivedData === null; i++) {
-        const event = enet.host.service(server, 5);
-        if (event.type === ENetEventType.receive) {
-          receivedData = event.packet.data.toString();
-          expect(event.packet.dataLength).toBe(12);
-        }
-        enet.host.service(client, 5);
-      }
+      const received = receivePacket(server, client);
 
-      expect(receivedData).toBe("test message");
+      expect(received.data.toString()).toBe(MESSAGE);
+      expect(received.dataLength).toBe(MESSAGE.length);
     });
   });
+});
 
-  describe("disconnect", () => {
-    it("gracefully disconnects with data", () => {
-      enet.peer.disconnect(peer, 42);
+describe("peer disconnect", () => {
+  it("disconnects gracefully with data", () => {
+    withConnection(address, ({ client, peer, server }) => {
+      enet.peer.disconnect(peer, DISCONNECT_DATA);
 
-      let disconnected = false;
-      let disconnectData: number | null = null;
-      for (let i = 0; i < 100 && !disconnected; i++) {
-        enet.host.service(client, 5);
-        const event = enet.host.service(server, 5);
-        if (event.type === ENetEventType.disconnect) {
-          disconnected = true;
-          disconnectData = event.data;
-        }
-      }
+      const event = serviceUntil(server, client, ENetEventType.disconnect);
 
-      expect(disconnected).toBe(true);
-      expect(disconnectData).toBe(42);
+      expect(event.data).toBe(DISCONNECT_DATA);
     });
   });
+});
 
-  describe("reset", () => {
-    it("forcefully disconnects", () => {
+describe("peer reset", () => {
+  it("resets a connection", () => {
+    withConnection(address, ({ peer }) => {
       expect(() => {
         enet.peer.reset(peer);
       }).not.toThrow();
