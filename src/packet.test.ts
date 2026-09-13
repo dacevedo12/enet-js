@@ -1,23 +1,38 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { createPacket, withEnet } from "./fixtures.js";
+import type { IENetPacket } from "./index.js";
 import { ENetPacketFlag, enet } from "./index.js";
-import { enetPacket, enet_packet_create } from "./native/index.js";
+// oxlint-disable-next-line import/no-namespace -- the mock replaces one binding and keeps the others
+import * as native from "./native/index.js";
 import { nonNull } from "./util.js";
 
 vi.setConfig({ testTimeout: 10_000 });
 
 const TEXT = "hello";
 const BINARY = Buffer.from("00ff42dead", "hex");
+const GROWN_LENGTH = 64;
+const SHRUNK_LENGTH = 2;
+const RESIZE_SUCCESS = 0;
+const START = 0;
+const NO_REFERENCES = 0;
+const CHECK_INPUT = "123456789";
+// The CRC-32 of "123456789" (0xcbf43926), which ENet returns in network byte order
+const CHECK_VALUE = 0x26_39_f4_cb;
+const USER_DATA = { player: "one" };
+const MESSAGE = "free callback failed";
 const flagCases = [
   { flag: ENetPacketFlag.none, label: "none" },
   { flag: ENetPacketFlag.reliable, label: "reliable" },
   { flag: ENetPacketFlag.unsequenced, label: "unsequenced" },
 ] as const;
 
-const failingPacketCreate: typeof enet_packet_create = Object.assign(
+const failingPacketCreate: typeof native.enet_packet_create = Object.assign(
   (): null => null,
-  { async: enet_packet_create.async, info: enet_packet_create.info },
+  {
+    async: native.enet_packet_create.async,
+    info: native.enet_packet_create.info,
+  },
 );
 
 describe("packet create", () => {
@@ -46,6 +61,7 @@ describe("packet create", () => {
       expect(packet).toMatchObject({
         dataLength: BINARY.length,
         flags: ENetPacketFlag.none,
+        referenceCount: NO_REFERENCES,
       });
       expect(packet.data).toStrictEqual(BINARY);
 
@@ -60,12 +76,103 @@ describe("packet create failure", () => {
 
     vi.resetModules();
     vi.doMock(import("./native/index.js"), () => ({
-      enetPacket,
+      ...native,
       enet_packet_create: failingPacketCreate,
     }));
 
     const { create } = await import("./packet.js");
 
     expect(create(BINARY)).toBeNull();
+  });
+});
+
+describe("packet resize", () => {
+  it("grows the data into new memory, keeping its bytes", () => {
+    expect.hasAssertions();
+
+    const packet = createPacket(Buffer.from(TEXT));
+
+    expect(enet.packet.resize(packet, GROWN_LENGTH)).toBe(RESIZE_SUCCESS);
+    expect(packet.dataLength).toBe(GROWN_LENGTH);
+    expect(packet.data.subarray(START, TEXT.length).toString()).toBe(TEXT);
+
+    enet.packet.destroy(packet);
+  });
+
+  it("shrinks the data length in place", () => {
+    expect.hasAssertions();
+
+    const packet = createPacket(Buffer.from(TEXT));
+
+    expect(enet.packet.resize(packet, SHRUNK_LENGTH)).toBe(RESIZE_SUCCESS);
+    expect(packet.data.toString()).toBe(TEXT.slice(START, SHRUNK_LENGTH));
+
+    enet.packet.destroy(packet);
+  });
+});
+
+describe("packet crc32", () => {
+  it("checksums buffers as if their bytes were joined", () => {
+    expect.hasAssertions();
+    expect(enet.crc32([Buffer.from("1234"), Buffer.from("56789")])).toBe(
+      enet.crc32([Buffer.from(CHECK_INPUT)]),
+    );
+  });
+
+  it("computes the CRC-32 in network byte order", () => {
+    expect.hasAssertions();
+    expect(enet.crc32([Buffer.from(CHECK_INPUT)])).toBe(CHECK_VALUE);
+  });
+});
+
+describe("packet free callback", () => {
+  it("gets the packet and its user data before ENet frees it", () => {
+    expect.hasAssertions();
+
+    const packet = createPacket(Buffer.from(TEXT));
+    const freed: unknown[] = [];
+
+    packet.userData = USER_DATA;
+    packet.freeCallback = (freedPacket): void => {
+      freed.push(freedPacket, freedPacket.userData);
+    };
+
+    expect(packet.freeCallback).toBeTypeOf("function");
+
+    enet.packet.destroy(packet);
+
+    expect(freed).toStrictEqual([packet, USER_DATA]);
+  });
+
+  it("clears the callback with null", () => {
+    expect.hasAssertions();
+
+    const packet = createPacket(Buffer.from(TEXT));
+    const freed: IENetPacket[] = [];
+
+    packet.freeCallback = (freedPacket): void => {
+      freed.push(freedPacket);
+    };
+    packet.freeCallback = null;
+    enet.packet.destroy(packet);
+
+    expect([packet.freeCallback, packet.userData]).toStrictEqual([null, null]);
+    expect(freed).toStrictEqual([]);
+  });
+});
+
+describe("packet free callback errors", () => {
+  it("rethrows an error from the callback once destroy returns", () => {
+    expect.hasAssertions();
+
+    const packet = createPacket(Buffer.from(TEXT));
+
+    packet.freeCallback = (): never => {
+      throw new Error(MESSAGE);
+    };
+
+    expect(() => {
+      enet.packet.destroy(packet);
+    }).toThrow(MESSAGE);
   });
 });
