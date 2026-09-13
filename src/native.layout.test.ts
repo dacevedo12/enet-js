@@ -21,7 +21,7 @@ interface StructLayout {
 // eslint-disable-next-line @typescript-eslint/strict-void-return -- util.promisify(execFile) is Node's documented promise API for execFile
 const execFileAsync = promisify(execFile);
 
-const enetIncludePath = process.env.ENET_INCLUDE_PATH;
+const enetIncludePath = process.env["ENET_INCLUDE_PATH"];
 
 if (enetIncludePath === undefined) {
   throw new Error(
@@ -69,7 +69,7 @@ const cLayout = async (
     const binary = path.join(workDirectory, struct);
 
     await writeFile(source, layoutProgram(struct, fields));
-    await execFileAsync(process.env.CC ?? "cc", [
+    await execFileAsync(process.env["CC"] ?? "cc", [
       "-I",
       enetIncludePath,
       "-o",

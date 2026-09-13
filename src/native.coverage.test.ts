@@ -7,7 +7,7 @@ import * as native from "./native/index.js";
 
 const ENET_API_PATTERN = /ENET_API\s[\w\s*]*?\b(?<name>enet_\w+)\s*\(/gu;
 
-const enetIncludePath = process.env.ENET_INCLUDE_PATH;
+const enetIncludePath = process.env["ENET_INCLUDE_PATH"];
 
 if (enetIncludePath === undefined) {
   throw new Error(
@@ -82,7 +82,7 @@ const findCoverage = async (): Promise<Coverage> => {
   const declared = new Set<string>();
 
   for (const match of headers.matchAll(ENET_API_PATTERN)) {
-    const name = match.groups?.name;
+    const name = match.groups?.["name"];
 
     if (name !== undefined) {
       declared.add(name);
