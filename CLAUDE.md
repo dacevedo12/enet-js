@@ -72,15 +72,16 @@ Each wrapper module (host.ts, packet.ts, peer.ts) converts between:
 
 - **JS interface types** (`IENetHost`, `IENetPeer`, `IENetPacket`) - user-facing
   with string IPs and Buffer data
-- **Native types** - opaque pointers and numeric representations
+- **Native types** - Koffi pointers (BigInts) and numeric representations
 
 Key conversions:
 
 - IP addresses: string format ↔ 32-bit integer (via `util.ts`
   ipToLong/ipFromLong)
 - Packet data: Buffer ↔ native pointer + length
-- All native resources wrapped with a `native` property holding the opaque
-  pointer
+- All native resources wrapped with a `native` property holding the pointer,
+  typed per struct (`NativePointer<"ENetHost">` etc. in `structs.ts`) because
+  Koffi 3 pointers are plain BigInts that Koffi doesn't type-check at runtime
 
 ### Type Definitions (`src/structs.ts`)
 
