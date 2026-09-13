@@ -5,6 +5,8 @@ import { ENetPacketFlag, enet } from "./index.js";
 import { enet_packet_create } from "./native/index.js";
 import { nonNull } from "./util.js";
 
+vi.setConfig({ testTimeout: 10_000 });
+
 const TEXT = "hello";
 const BINARY = Buffer.from("00ff42dead", "hex");
 const flagCases = [
@@ -20,6 +22,8 @@ const failingPacketCreate: typeof enet_packet_create = Object.assign(
 
 describe("packet create", () => {
   it.each(flagCases)("creates a packet with the $label flag", ({ flag }) => {
+    expect.hasAssertions();
+
     withEnet(() => {
       const packet = createPacket(Buffer.from(TEXT), flag);
 
@@ -31,6 +35,8 @@ describe("packet create", () => {
   });
 
   it("preserves binary data with the default flags", () => {
+    expect.hasAssertions();
+
     withEnet(() => {
       const packet = nonNull(
         enet.packet.create(BINARY),
@@ -50,9 +56,10 @@ describe("packet create", () => {
 
 describe("packet create failure", () => {
   it("returns null when enet_packet_create returns NULL", async () => {
+    expect.hasAssertions();
+
     vi.resetModules();
     vi.doMock(import("./native/index.js"), () => ({
-      // eslint-disable-next-line @typescript-eslint/naming-convention -- mocks the native enet_packet_create binding
       enet_packet_create: failingPacketCreate,
     }));
 

@@ -1,24 +1,13 @@
-/* eslint-disable @typescript-eslint/naming-convention */
-import koffi, { type KoffiFunc } from "koffi";
+import type { KoffiFunc } from "koffi";
+import koffi from "koffi";
 
 import type { NativePointer } from "./pointers.js";
-import {
-  enetAddress,
-  enetEvent,
-  enetHost,
-  enetPacket,
-  enetPeer,
-} from "./structs.js";
-
-interface NativeAddress {
-  host: number;
-  port: number;
-}
+import type { NativeAddress, NativeEvent } from "./structs.js";
 
 const enetLibPath = process.env["ENET_LIB_PATH"];
 
 if (enetLibPath === undefined) {
-  throw Error(
+  throw new Error(
     "ENET_LIB_PATH is not set; set it to the full path of the ENet shared library",
   );
 }
@@ -56,7 +45,11 @@ const enet_host_connect: KoffiFunc<
   "ENetPeer *enet_host_connect(ENetHost *host, ENetAddress *address, size_t channelCount, uint32 data)",
 );
 const enet_host_service: KoffiFunc<
-  (host: NativePointer<"ENetHost">, event: object, timeout: number) => number
+  (
+    host: NativePointer<"ENetHost">,
+    event: NativeEvent,
+    timeout: number,
+  ) => number
 > = lib.func(
   "int enet_host_service(ENetHost *host, _Out_ ENetEvent *event, uint32 timeout)",
 );
@@ -100,12 +93,9 @@ const enet_peer_reset: KoffiFunc<
   (peer: NativePointer<"ENetPeer">) => undefined
 > = lib.func("void enet_peer_reset(ENetPeer *peer)");
 
+export type { NativeAddress, NativeEvent } from "./structs.js";
+export { decodePacket, decodePeer } from "./structs.js";
 export {
-  enetAddress,
-  enetEvent,
-  enetHost,
-  enetPacket,
-  enetPeer,
   enet_deinitialize,
   enet_host_broadcast,
   enet_host_connect,

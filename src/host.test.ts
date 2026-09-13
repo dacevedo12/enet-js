@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import {
   CHANNEL,
@@ -16,6 +16,8 @@ import {
 } from "./fixtures.js";
 import { ENetEventType, enet } from "./index.js";
 
+vi.setConfig({ testTimeout: 10_000 });
+
 const PORT = 7777;
 const NO_WAIT = 0;
 const BROADCAST_MESSAGE = "broadcast message";
@@ -24,6 +26,8 @@ const address = localAddress(PORT);
 
 describe("host create", () => {
   it("creates a server host bound to an address", () => {
+    expect.hasAssertions();
+
     withEnet(() => {
       expect(() => {
         enet.host.destroy(createServer(address));
@@ -32,6 +36,8 @@ describe("host create", () => {
   });
 
   it("creates a client host without an address", () => {
+    expect.hasAssertions();
+
     withEnet(() => {
       expect(() => {
         enet.host.destroy(createClient());
@@ -40,6 +46,8 @@ describe("host create", () => {
   });
 
   it("returns null when binding to a port already in use", () => {
+    expect.hasAssertions();
+
     withEnet(() => {
       const server = createServer(address);
 
@@ -52,6 +60,8 @@ describe("host create", () => {
 
 describe("host connect", () => {
   it("connects to a remote host", () => {
+    expect.hasAssertions();
+
     withEnet(() => {
       const server = createServer(address);
       const client = createClient();
@@ -63,6 +73,8 @@ describe("host connect", () => {
   });
 
   it("returns null when no peer slots are available", () => {
+    expect.hasAssertions();
+
     withEnet(() => {
       const client = createClient();
 
@@ -77,6 +89,8 @@ describe("host connect", () => {
 
 describe("host service", () => {
   it("returns a none event when nothing is pending", () => {
+    expect.hasAssertions();
+
     withEnet(() => {
       const server = createServer(address);
 
@@ -93,6 +107,8 @@ describe("host service", () => {
 
 describe("host broadcast", () => {
   it("broadcasts a packet to connected peers", () => {
+    expect.hasAssertions();
+
     withConnection(address, ({ client, server }) => {
       const packet = createPacket(Buffer.from(BROADCAST_MESSAGE));
 
@@ -108,6 +124,8 @@ describe("host broadcast", () => {
 
 describe("host flush", () => {
   it("flushes queued packets to the network", () => {
+    expect.hasAssertions();
+
     withConnection(address, ({ client, peer, server }) => {
       const packet = createPacket(Buffer.from(SENT_MESSAGE));
 

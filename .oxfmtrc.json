@@ -3,8 +3,8 @@
   "printWidth": 80,
   "sortImports": {
     "groups": [
-      "value-builtin",
-      "value-external",
+      ["type-builtin", "value-builtin"],
+      ["type-external", "value-external"],
       [
         "type-parent",
         "type-sibling",
