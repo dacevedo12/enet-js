@@ -17,7 +17,7 @@ pkgs.writeShellApplication {
   text = ''
     export ENET_INCLUDE_PATH="${enet}/include"
     export ENET_LIB_PATH="${enet}/lib/libenet${pkgs.stdenv.hostPlatform.extensions.sharedLibrary}"
-    npm install
+    npm ci
     npm test
   '';
 }
