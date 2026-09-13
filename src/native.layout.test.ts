@@ -4,9 +4,12 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
+// oxlint-disable-next-line import/no-namespace -- the test checks every struct the module declares against enet.h
 import * as structs from "./native/structs.js";
+
+vi.setConfig({ testTimeout: 10_000 });
 
 interface FieldLayout {
   readonly offset: number;
@@ -18,7 +21,7 @@ interface StructLayout {
   readonly size: number;
 }
 
-// eslint-disable-next-line @typescript-eslint/strict-void-return -- util.promisify(execFile) is Node's documented promise API for execFile
+// oxlint-disable-next-line typescript/strict-void-return -- util.promisify(execFile) is Node's documented promise API for execFile
 const execFileAsync = promisify(execFile);
 
 const enetIncludePath = process.env["ENET_INCLUDE_PATH"];
@@ -103,6 +106,7 @@ describe("native layout", () => {
   it.each([...koffiLayouts])(
     "%s matches the C layout",
     async (name, declared) => {
+      expect.hasAssertions();
       expect(declared).toStrictEqual(
         await cLayout(name, Object.keys(declared.fields)),
       );

@@ -1,13 +1,11 @@
-import {
-  ENetEventType,
-  ENetPacketFlag,
-  type IENetAddress,
-  type IENetEvent,
-  type IENetHost,
-  type IENetPacket,
-  type IENetPeer,
-  enet,
+import type {
+  IENetAddress,
+  IENetEvent,
+  IENetHost,
+  IENetPacket,
+  IENetPeer,
 } from "./index.js";
+import { ENetEventType, ENetPacketFlag, enet } from "./index.js";
 import { nonNull } from "./util.js";
 
 interface Connection {

@@ -1,5 +1,41 @@
-/* eslint-disable sort-keys */
-import koffi, { type TypeObject } from "koffi";
+/* oxlint-disable sort-keys -- struct members must follow the C declaration order */
+import type { TypeObject } from "koffi";
+import koffi from "koffi";
+
+import type { ENetEventType } from "./enums.js";
+import type { NativePointer } from "./pointers.js";
+
+// ENET_PEER_RELIABLE_WINDOWS in enet.h
+const ENET_PEER_RELIABLE_WINDOWS = 16;
+
+// ENET_PEER_UNSEQUENCED_WINDOW_SIZE in enet.h, stored as 32-bit words
+const ENET_PEER_UNSEQUENCED_WINDOW_SIZE = 1024;
+const UNSEQUENCED_WINDOW_WORD_BITS = 32;
+
+interface NativeAddress {
+  readonly host: number;
+  readonly port: number;
+}
+
+interface NativeEvent {
+  readonly channelID: number;
+  readonly data: number;
+  readonly packet: NativePointer<"ENetPacket"> | null;
+  readonly peer: NativePointer<"ENetPeer"> | null;
+  readonly type: ENetEventType;
+}
+
+interface NativePacket {
+  readonly data: bigint;
+  readonly dataLength: number;
+  readonly flags: number;
+  readonly referenceCount: number;
+}
+
+interface NativePeer {
+  readonly address: NativeAddress;
+  readonly mtu: number;
+}
 
 const enetUint8: TypeObject = koffi.types.uint8;
 const enetUint16: TypeObject = koffi.types.uint16;
@@ -31,7 +67,7 @@ const enetChannel: TypeObject = koffi.struct("ENetChannel", {
   outgoingReliableSequenceNumber: enetUint16,
   outgoingUnreliableSequenceNumber: enetUint16,
   usedReliableWindows: enetUint16,
-  reliableWindows: koffi.array(enetUint16, 16),
+  reliableWindows: koffi.array(enetUint16, ENET_PEER_RELIABLE_WINDOWS),
   incomingReliableSequenceNumber: enetUint16,
   incomingUnreliableSequenceNumber: enetUint16,
   incomingReliableCommands: enetList,
@@ -92,7 +128,10 @@ const enetPeer: TypeObject = koffi.struct("ENetPeer", {
   needsDispatch: koffi.types.int,
   incomingUnsequencedGroup: enetUint16,
   outgoingUnsequencedGroup: enetUint16,
-  unsequencedWindow: koffi.array(enetUint32, 32),
+  unsequencedWindow: koffi.array(
+    enetUint32,
+    ENET_PEER_UNSEQUENCED_WINDOW_SIZE / UNSEQUENCED_WINDOW_WORD_BITS,
+  ),
   disconnectData: enetUint32,
 });
 
@@ -104,7 +143,18 @@ const enetEvent: TypeObject = koffi.struct("ENetEvent", {
   packet: "ENetPacket *",
 });
 
+const decodePacket = (packet: NativePointer<"ENetPacket">): NativePacket =>
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Koffi decodes per the struct declaration, which the layout test checks against enet.h
+  koffi.decode(packet, enetPacket) as NativePacket;
+
+const decodePeer = (peer: NativePointer<"ENetPeer">): NativePeer =>
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Koffi decodes per the struct declaration, which the layout test checks against enet.h
+  koffi.decode(peer, enetPeer) as NativePeer;
+
+export type { NativeAddress, NativeEvent, NativePacket, NativePeer };
 export {
+  decodePacket,
+  decodePeer,
   enetAddress,
   enetChannel,
   enetEvent,
