@@ -4,7 +4,7 @@
     "url": "https://github.com/dacevedo12/enet-js/issues"
   },
   "dependencies": {
-    "koffi": "^2.15.1"
+    "koffi": "^3.2.1"
   },
   "description": "Node.js bindings for ENet, the reliable UDP networking library",
   "devDependencies": {

@@ -34,7 +34,7 @@ const formatAddress = (address: IENetAddress): { host: number; port: number } =>
     port: address.port,
   }) as const;
 
-const formatPeer = (peer: object): IENetPeer => {
+const formatPeer = (peer: IENetPeer["native"]): IENetPeer => {
   const peerAttributes = koffi.decode(peer, enetPeer) as {
     address: { host: number; port: number };
     mtu: number;
@@ -62,9 +62,9 @@ const connect = (
     formatAddress(address),
     channelCount,
     data,
-  ) as object | null;
+  ) as IENetPeer["native"] | null;
 
-  if (!peer) {
+  if (peer === null) {
     return null;
   }
 
@@ -84,9 +84,9 @@ const create = (
     channelLimit,
     incomingBandwidth,
     outgoingBandwidth,
-  ) as object | null;
+  ) as IENetHost["native"] | null;
 
-  if (!host) {
+  if (host === null) {
     return null;
   }
 
@@ -101,9 +101,9 @@ const flush = (host: IENetHost): void => {
   enet_host_flush(host.native);
 };
 
-const formatPacket = (packet: object): IENetPacket => {
+const formatPacket = (packet: IENetPacket["native"]): IENetPacket => {
   const packetAttributes = koffi.decode(packet, enetPacket) as {
-    data: Buffer;
+    data: bigint;
     dataLength: number;
     flags: number;
     referenceCount: number;
@@ -124,8 +124,8 @@ const formatEvent = (event: object): IENetEvent => {
   const eventAttributes = event as {
     channelID: number;
     data: number;
-    packet: null | object;
-    peer: null | object;
+    packet: IENetPacket["native"] | null;
+    peer: IENetPeer["native"] | null;
     type: ENetEventType;
   };
 
