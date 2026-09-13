@@ -1,8 +1,6 @@
-import koffi from "koffi";
-
 import { ENetPacketFlag } from "./enums.js";
 import {
-  enetPacket,
+  decodePacket,
   enet_packet_create,
   enet_packet_destroy,
 } from "./native/index.js";
@@ -18,14 +16,15 @@ const create = (
     return null;
   }
 
-  const packetAttributes = koffi.decode(packet, enetPacket) as {
-    data: bigint;
-    referenceCount: number;
-    flags: number;
-    dataLength: number;
-  };
+  const attributes = decodePacket(packet);
 
-  return { ...packetAttributes, data, native: packet };
+  return {
+    data,
+    dataLength: attributes.dataLength,
+    flags: attributes.flags,
+    native: packet,
+    referenceCount: attributes.referenceCount,
+  };
 };
 
 const destroy = (packet: IENetPacket): void => {

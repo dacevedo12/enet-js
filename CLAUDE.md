@@ -64,7 +64,9 @@ structure:
 ### Native Bindings Layer (`src/native/`)
 
 - `native/structs.ts` - Koffi struct definitions matching C ENet structures
-  (ENetAddress, ENetPacket, ENetPeer, ENetEvent, etc.)
+  (ENetAddress, ENetPacket, ENetPeer, ENetEvent, etc.), plus typed decoders
+- `native/enums.ts` - ENet enum values, re-exported by `src/enums.ts`
+- `native/pointers.ts` - `NativePointer`, the per-struct pointer type
 - `native/index.ts` - FFI function bindings using `koffi.load()` to call native
   ENet functions
 - When binding a new ENet function, remove it from the `unbound` list in
@@ -103,3 +105,7 @@ discriminated unions based on `ENetEventType`:
 - Imports sorted by oxfmt (built-in, external, then relative); exports
   alphabetized
 - Functional style preferred (const functions, no classes)
+- `tsc`, `oxlint` and `oxfmt` run at their strictest settings. Fix code rather
+  than turning a rule off: the only exceptions are the documented ones in
+  `.oxlintrc.json`, or a single line with
+  `// oxlint-disable-next-line <rule> -- <reason>`
