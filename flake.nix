@@ -2,8 +2,8 @@
   description = "Node.js bindings for ENet, the reliable UDP networking library";
 
   inputs = {
-    flake-parts.url = "github:hercules-ci/flake-parts/80daad04eddbbf5a4d883996a73f3f542fa437ac";
-    nixpkgs.url = "github:nixos/nixpkgs/ab9fbbcf4858bd6d40ba2bbec37ceb4ab6e1f562";
+    flake-parts.url = "github:hercules-ci/flake-parts/31729ca8cbdb4fa927b34e5f4353e6a83f39e993";
+    nixpkgs.url = "github:nixos/nixpkgs/eaad089433ca2bb662274377d33df3d0e51ef28b";
   };
 
   outputs =
