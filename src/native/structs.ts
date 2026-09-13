@@ -25,18 +25,6 @@ interface NativeEvent {
   readonly type: ENetEventType;
 }
 
-interface NativePacket {
-  readonly data: bigint;
-  readonly dataLength: number;
-  readonly flags: number;
-  readonly referenceCount: number;
-}
-
-interface NativePeer {
-  readonly address: NativeAddress;
-  readonly mtu: number;
-}
-
 const enetUint8: TypeObject = koffi.types.uint8;
 const enetUint16: TypeObject = koffi.types.uint16;
 const enetUint32: TypeObject = koffi.types.uint32;
@@ -151,18 +139,8 @@ const enetEvent: TypeObject = koffi.struct("ENetEvent", {
   packet: "ENetPacket *",
 });
 
-const decodePacket = (packet: NativePointer<"ENetPacket">): NativePacket =>
-  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Koffi decodes per the struct declaration, which the layout test checks against enet.h
-  koffi.decode(packet, enetPacket) as NativePacket;
-
-const decodePeer = (peer: NativePointer<"ENetPeer">): NativePeer =>
-  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Koffi decodes per the struct declaration, which the layout test checks against enet.h
-  koffi.decode(peer, enetPeer) as NativePeer;
-
-export type { NativeAddress, NativeEvent, NativePacket, NativePeer };
+export type { NativeAddress, NativeEvent };
 export {
-  decodePacket,
-  decodePeer,
   enetAddress,
   enetChannel,
   enetEvent,
