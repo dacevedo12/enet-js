@@ -8,18 +8,13 @@
   },
   "description": "Node.js bindings for ENet, the reliable UDP networking library",
   "devDependencies": {
-    "@eslint/js": "9.39.2",
     "@types/node": "24.13.4",
     "@vitest/coverage-v8": "5.0.0",
-    "eslint": "9.39.2",
-    "eslint-config-prettier": "10.1.8",
-    "eslint-plugin-import": "2.32.0",
-    "eslint-plugin-prettier": "5.5.5",
-    "jiti": "2.6.1",
     "markdownlint-cli": "0.49.1",
-    "prettier": "3.8.1",
-    "typescript": "5.9.3",
-    "typescript-eslint": "8.56.0",
+    "oxfmt": "0.67.0",
+    "oxlint": "1.82.0",
+    "oxlint-tsgolint": "7.0.2001",
+    "typescript": "7.0.2",
     "vitest": "5.0.0"
   },
   "engines": {
@@ -51,9 +46,10 @@
   },
   "scripts": {
     "build": "rm -rf ./dist/ && tsc --project tsconfig.build.json",
-    "lint-code": "tsc && eslint .",
+    "lint-code": "tsc && oxlint && oxfmt --check src",
     "lint-docs": "markdownlint README.md",
-    "test": "vitest run"
+    "test": "vitest run",
+    "format": "oxfmt src"
   },
   "type": "module",
   "types": "./dist/index.d.ts",

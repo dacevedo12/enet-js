@@ -1,5 +1,3 @@
-import { nonNull } from "./util.js";
-
 import {
   ENetEventType,
   ENetPacketFlag,
@@ -10,6 +8,7 @@ import {
   type IENetPeer,
   enet,
 } from "./index.js";
+import { nonNull } from "./util.js";
 
 interface Connection {
   readonly client: IENetHost;
