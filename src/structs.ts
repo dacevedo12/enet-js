@@ -1,11 +1,5 @@
-import type { ENetEventType, ENetPacketFlag } from "./enums.js";
-
-declare const pointerType: unique symbol;
-
-// Koffi pointers are plain bigints, so the pointed-to type is tracked at compile time
-type NativePointer<Type extends string> = bigint & {
-  readonly [pointerType]: Type;
-};
+import type { ENetEventType } from "./enums.js";
+import type { NativePointer } from "./native/pointers.js";
 
 interface IENetAddress {
   host: string;
@@ -21,19 +15,19 @@ interface IENetEventBase {
 interface IENetEventEmpty extends IENetEventBase {
   packet: null;
   peer: null;
-  type: ENetEventType.none;
+  type: typeof ENetEventType.none;
 }
 
 interface IENetEventWithPacket extends IENetEventBase {
   packet: IENetPacket;
   peer: IENetPeer;
-  type: ENetEventType.receive;
+  type: typeof ENetEventType.receive;
 }
 
 interface IENetEventWithPeer extends IENetEventBase {
   packet: null;
   peer: IENetPeer;
-  type: ENetEventType.connect | ENetEventType.disconnect;
+  type: typeof ENetEventType.connect | typeof ENetEventType.disconnect;
 }
 
 type IENetEvent = IENetEventEmpty | IENetEventWithPacket | IENetEventWithPeer;
@@ -45,7 +39,8 @@ interface IENetHost {
 interface IENetPacket {
   data: Buffer;
   dataLength: number;
-  flags: ENetPacketFlag;
+  // Bitwise OR of ENetPacketFlag values
+  flags: number;
   native: NativePointer<"ENetPacket">;
   referenceCount: number;
 }

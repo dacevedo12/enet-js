@@ -1,16 +1,16 @@
 /* eslint-disable sort-keys */
-import koffi from "koffi";
+import koffi, { type TypeObject } from "koffi";
 
-const enetUint8 = koffi.types.uint8;
-const enetUint16 = koffi.types.uint16;
-const enetUint32 = koffi.types.uint32;
+const enetUint8: TypeObject = koffi.types.uint8;
+const enetUint16: TypeObject = koffi.types.uint16;
+const enetUint32: TypeObject = koffi.types.uint32;
 
-const enetAddress = koffi.struct("ENetAddress", {
+const enetAddress: TypeObject = koffi.struct("ENetAddress", {
   host: enetUint32,
   port: enetUint16,
 });
 
-const enetPacket = koffi.struct("ENetPacket", {
+const enetPacket: TypeObject = koffi.struct("ENetPacket", {
   referenceCount: koffi.types.size_t,
   flags: enetUint32,
   data: "uint8 *",
@@ -18,16 +18,16 @@ const enetPacket = koffi.struct("ENetPacket", {
   freeCallback: "void *",
 });
 
-const enetListNode = koffi.struct("ENetListNode", {
+const enetListNode: TypeObject = koffi.struct("ENetListNode", {
   next: "ENetListNode *",
   previous: "ENetListNode *",
 });
 
-const enetList = koffi.struct("ENetList", {
+const enetList: TypeObject = koffi.struct("ENetList", {
   sentinel: enetListNode,
 });
 
-const enetChannel = koffi.struct("ENetChannel", {
+const enetChannel: TypeObject = koffi.struct("ENetChannel", {
   outgoingReliableSequenceNumber: enetUint16,
   outgoingUnreliableSequenceNumber: enetUint16,
   usedReliableWindows: enetUint16,
@@ -38,9 +38,9 @@ const enetChannel = koffi.struct("ENetChannel", {
   incomingUnreliableCommands: enetList,
 });
 
-const enetHost = koffi.opaque("ENetHost");
+const enetHost: TypeObject = koffi.opaque("ENetHost");
 
-const enetPeer = koffi.struct("ENetPeer", {
+const enetPeer: TypeObject = koffi.struct("ENetPeer", {
   dispatchList: enetListNode,
   host: "ENetHost *",
   outgoingPeerID: enetUint16,
@@ -96,7 +96,7 @@ const enetPeer = koffi.struct("ENetPeer", {
   disconnectData: enetUint32,
 });
 
-const enetEvent = koffi.struct("ENetEvent", {
+const enetEvent: TypeObject = koffi.struct("ENetEvent", {
   type: koffi.types.int,
   peer: "ENetPeer *",
   channelID: enetUint8,

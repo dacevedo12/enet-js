@@ -17,6 +17,6 @@ const send = (
   peer: IENetPeer,
   channelID: number,
   packet: IENetPacket,
-): number => enet_peer_send(peer.native, channelID, packet.native) as number;
+): number => enet_peer_send(peer.native, channelID, packet.native);
 
 export { disconnect, reset, send };
