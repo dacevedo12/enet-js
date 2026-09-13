@@ -206,7 +206,7 @@ switch (event.type) {
     return;
 
   case ENetEventType.receive:
-    enet.packet.destroy(packet);
+    enet.packet.destroy(event.packet);
     break;
 }
 /* We've arrived here, so the disconnect attempt didn't
@@ -247,6 +247,27 @@ if (event.type === ENetEventType.connect) {
   console.error("Connection to 127.0.0.1:1234 failed.");
 }
 ```
+
+## Handles
+
+Objects that stand for memory ENet allocates are thin handles: their fields read
+ENet's memory each time you access them instead of copying it, and they never
+expose pointers or Koffi. Everything else this library returns, such as events,
+is a plain object.
+
+Handles follow the C API's rules on lifetimes and ownership, and enet-js doesn't
+check them. Using a handle after its memory is freed, whether you freed it or
+ENet did, is undefined behaviour and can crash the process, as it would in C.
+ENet's documentation for the matching C function tells you who owns what.
+
+Handles keep C's identity too: the same ENet struct always comes back as the
+same object, so handles can be compared with `===` and used as `Map` keys. When
+ENet reuses a struct for something new, the object you kept refers to the new
+contents.
+
+Buffers read from handles are views of ENet's memory, not copies, so copy one
+to keep its contents after the memory is freed. A `Buffer` you ask ENet to keep
+rather than copy must stay referenced for as long as ENet may use it.
 
 ## Docs
 

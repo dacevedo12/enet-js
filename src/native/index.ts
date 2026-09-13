@@ -92,7 +92,7 @@ const enet_peer_reset: KoffiFunc<
 > = lib.func("void enet_peer_reset(ENetPeer *peer)");
 
 export type { NativeAddress, NativeEvent } from "./structs.js";
-export { decodePacket, decodePeer } from "./structs.js";
+export { enetAddress, enetPacket, enetPeer } from "./structs.js";
 export {
   enet_deinitialize,
   enet_host_broadcast,
