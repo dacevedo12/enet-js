@@ -1,7 +1,7 @@
 # License
 
-Copyright (c) Lee Salzman (lsalzman@gmail.com)
-Copyright (c) David Acevedo (dacevedoa12@gmail.com)
+Copyright (c) Lee Salzman (<lsalzman@gmail.com>)
+Copyright (c) David Acevedo (<dacevedoa12@gmail.com>)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
