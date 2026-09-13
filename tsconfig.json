@@ -26,7 +26,5 @@
     "types": ["node"],
     "verbatimModuleSyntax": true
   },
-  "include": [
-    "./src/**/*.ts",
-  ],
+  "include": ["./src/**/*.ts"]
 }

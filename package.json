@@ -1,12 +1,46 @@
 {
-  "author": "https://github.com/dacevedo12",
+  "name": "enet-js",
+  "version": "1.2.7",
+  "description": "Node.js bindings for ENet, the reliable UDP networking library",
+  "keywords": [
+    "backend",
+    "enet",
+    "networking",
+    "udp"
+  ],
+  "homepage": "https://github.com/dacevedo12/enet-js",
   "bugs": {
     "url": "https://github.com/dacevedo12/enet-js/issues"
+  },
+  "license": "MIT",
+  "author": "https://github.com/dacevedo12",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dacevedo12/enet-js.git"
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "rm -rf ./dist/ && tsc --project tsconfig.build.json",
+    "lint-code": "tsc && oxlint && oxfmt --check",
+    "lint-docs": "markdownlint --ignore-path .gitignore '**/*.md'",
+    "test": "vitest run",
+    "format": "oxfmt"
   },
   "dependencies": {
     "koffi": "^3.2.1"
   },
-  "description": "Node.js bindings for ENet, the reliable UDP networking library",
   "devDependencies": {
     "@types/node": "24.13.4",
     "@vitest/coverage-v8": "5.0.0",
@@ -19,39 +53,5 @@
   },
   "engines": {
     "node": ">=18"
-  },
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "default": "./dist/index.js"
-    }
-  },
-  "files": [
-    "dist"
-  ],
-  "homepage": "https://github.com/dacevedo12/enet-js",
-  "keywords": [
-    "backend",
-    "enet",
-    "networking",
-    "udp"
-  ],
-  "license": "MIT",
-  "main": "./dist/index.js",
-  "name": "enet-js",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/dacevedo12/enet-js.git"
-  },
-  "scripts": {
-    "build": "rm -rf ./dist/ && tsc --project tsconfig.build.json",
-    "lint-code": "tsc && oxlint && oxfmt --check src",
-    "lint-docs": "markdownlint README.md",
-    "test": "vitest run",
-    "format": "oxfmt src"
-  },
-  "type": "module",
-  "types": "./dist/index.d.ts",
-  "version": "1.2.7"
+  }
 }
