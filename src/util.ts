@@ -13,4 +13,12 @@ const ipFromLong = (ipLong: number): string =>
     ".",
   );
 
-export { ipFromLong, ipToLong };
+const nonNull = <Value>(value: Value | null, message: string): Value => {
+  if (value === null) {
+    throw new Error(message);
+  }
+
+  return value;
+};
+
+export { ipFromLong, ipToLong, nonNull };
