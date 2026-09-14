@@ -1,5 +1,5 @@
 import { toNativeBuffers } from "./buffers.js";
-import { throwCallbackError } from "./callbacks.js";
+import { afterCallbacks } from "./callbacks.js";
 import {
   enet_range_coder_compress,
   enet_range_coder_create,
@@ -14,9 +14,7 @@ import { createHandle } from "./util.js";
 const rangeCoderPrototype: HandlePrototype<IENetRangeCoder> = {};
 
 const create = (): IENetRangeCoder | null => {
-  const pointer = enet_range_coder_create();
-
-  throwCallbackError();
+  const pointer = afterCallbacks(() => enet_range_coder_create());
 
   return pointer === null
     ? null
