@@ -4,15 +4,25 @@ const callbackErrors: unknown[] = [];
 const NO_ERRORS = 0;
 const FIRST_ERROR = 0;
 
-// Runs a JS function ENet invoked: if it throws, ENet gets the fallback and the error waits for throwCallbackError
-const guardCallback = <Result>(fallback: Result, run: () => Result): Result => {
+// Runs a JS function ENet expects a number from: if it throws or returns something else, ENet gets the fallback and the error waits for throwCallbackError
+const guardCallback = (fallback: number, run: () => unknown): number => {
   try {
-    return run();
+    const result = run();
+
+    if (typeof result === "number") {
+      return result;
+    }
+
+    callbackErrors.push(
+      new TypeError(
+        `A callback returned ${typeof result} to ENet instead of a number`,
+      ),
+    );
   } catch (error) {
     callbackErrors.push(error);
-
-    return fallback;
   }
+
+  return fallback;
 };
 
 const guardVoidCallback = (run: () => void): void => {
@@ -23,7 +33,7 @@ const guardVoidCallback = (run: () => void): void => {
   }
 };
 
-// Called after a native call that can run JS callbacks, to rethrow the first error one of them threw
+// Rethrows the first error a callback threw during the native call that just returned
 const throwCallbackError = (): void => {
   if (callbackErrors.length > NO_ERRORS) {
     const [error] = callbackErrors.splice(FIRST_ERROR);
@@ -32,4 +42,13 @@ const throwCallbackError = (): void => {
   }
 };
 
-export { guardCallback, guardVoidCallback, throwCallbackError };
+// Runs a native call that can run JS callbacks or allocate, then rethrows the first error a callback threw
+const afterCallbacks = <Result>(run: () => Result): Result => {
+  const result = run();
+
+  throwCallbackError();
+
+  return result;
+};
+
+export { afterCallbacks, guardCallback, guardVoidCallback, throwCallbackError };

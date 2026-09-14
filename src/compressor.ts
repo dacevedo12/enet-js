@@ -2,9 +2,9 @@ import koffi from "koffi";
 
 import { fromNativeBuffers, viewOf } from "./buffers.js";
 import {
+  afterCallbacks,
   guardCallback,
   guardVoidCallback,
-  throwCallbackError,
 } from "./callbacks.js";
 import {
   enetCompressCallback,
@@ -101,28 +101,25 @@ const compress = (
   host: IENetHost,
   compressor: IENetCompressor | null,
 ): void => {
-  if (compressor === null) {
-    enet_host_compress(host[nativePointer], null);
-  } else {
-    contexts.last += CONTEXT_STEP;
-    compressors.set(contexts.last, compressor);
-    enet_host_compress(host[nativePointer], {
-      compress: compressAddress,
-      context: contexts.last,
-      decompress: decompressAddress,
-      destroy: destroyAddress,
-    });
-  }
-
-  throwCallbackError();
+  afterCallbacks(() => {
+    if (compressor === null) {
+      enet_host_compress(host[nativePointer], null);
+    } else {
+      contexts.last += CONTEXT_STEP;
+      compressors.set(contexts.last, compressor);
+      enet_host_compress(host[nativePointer], {
+        compress: compressAddress,
+        context: contexts.last,
+        decompress: decompressAddress,
+        destroy: destroyAddress,
+      });
+    }
+  });
 };
 
-const compressWithRangeCoder = (host: IENetHost): number => {
-  const result = enet_host_compress_with_range_coder(host[nativePointer]);
-
-  throwCallbackError();
-
-  return result;
-};
+const compressWithRangeCoder = (host: IENetHost): number =>
+  afterCallbacks(() =>
+    enet_host_compress_with_range_coder(host[nativePointer]),
+  );
 
 export { compress, compressWithRangeCoder };

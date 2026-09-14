@@ -10,29 +10,37 @@ import {
 } from "./native/index.js";
 import type { IENetCallbacks } from "./structs.js";
 
+const SUCCESS = 0;
+
 const deinitialize = (): void => {
   enet_deinitialize();
 };
 
 const initialize = (): number => enet_initialize();
 
-// ENet keeps its own malloc and free, and keeps noMemory for the rest of the process, so it stays registered
+// ENet keeps its own malloc and free, and keeps noMemory for the rest of the process once it accepts the callbacks
 const initializeWithCallbacks = (
   version: number,
   inits: IENetCallbacks,
 ): number => {
   const { noMemory } = inits;
-
-  return enet_initialize_with_callbacks(version, {
+  const noMemoryAddress =
+    noMemory === undefined
+      ? null
+      : koffi.register(() => {
+          guardVoidCallback(noMemory);
+        }, enetNoMemoryCallback);
+  const result = enet_initialize_with_callbacks(version, {
     free: null,
     malloc: null,
-    no_memory:
-      noMemory === undefined
-        ? null
-        : koffi.register(() => {
-            guardVoidCallback(noMemory);
-          }, enetNoMemoryCallback),
+    no_memory: noMemoryAddress,
   });
+
+  if (result < SUCCESS && noMemoryAddress !== null) {
+    koffi.unregister(noMemoryAddress);
+  }
+
+  return result;
 };
 
 const linkedVersion = (): number => enet_linked_version();

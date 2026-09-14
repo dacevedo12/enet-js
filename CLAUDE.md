@@ -96,7 +96,8 @@ expose pointers or Koffi.
   track lifetimes, and misuse fails as it would in C. Don't add such checks
 - `peer.ts` keeps one peer object per peer pointer for each host, so peers
   compare like `ENetPeer *` in C
-- `packet.data` is a `Buffer` over the packet's memory, like `packet->data`
+- `packet.data` is a `Buffer` over the packet's memory, like `packet->data`,
+  so it moves when `enet.packet.resize` grows the packet
 - IP addresses convert between strings and 32-bit integers in `util.ts`
 
 ### C to JavaScript
@@ -111,8 +112,13 @@ expose pointers or Koffi.
   unregistering, since Koffi reuses freed slots, and share one registered
   callback per kind when ENet passes a key (host, packet, compressor context)
 - Every JS function ENet calls runs inside `guardCallback` or
-  `guardVoidCallback` (`callbacks.ts`), and every wrapper whose native call can
-  run callbacks or allocate calls `throwCallbackError()` after it
+  `guardVoidCallback` (`callbacks.ts`). `guardCallback` also treats a result
+  that isn't a number as an error, since ENet would otherwise get a stale value
+- Every wrapper whose native call can run a JS callback or allocate wraps that
+  call in `afterCallbacks`, which rethrows the first error a callback threw.
+  `host.service` and `host.checkEvents` call `throwCallbackError()` themselves
+- `Buffer`s passed to JS callbacks are views valid only during the callback, and
+  a compressor object's `destroy` runs once for each host it was given to
 
 ### Type Definitions (`src/structs.ts`)
 

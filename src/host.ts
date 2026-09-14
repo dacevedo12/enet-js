@@ -1,5 +1,5 @@
 import { toNativeAddress, toNativeAddressOrNull } from "./address.js";
-import { throwCallbackError } from "./callbacks.js";
+import { afterCallbacks, throwCallbackError } from "./callbacks.js";
 import { ENetEventType } from "./enums.js";
 import { forgetHost, wrapHost } from "./host-handle.js";
 import type { NativeEvent } from "./native/index.js";
@@ -70,15 +70,15 @@ const create = (
   incomingBandwidth: number,
   outgoingBandwidth: number,
 ): IENetHost | null => {
-  const pointer = enet_host_create(
-    toNativeAddressOrNull(address),
-    peerCount,
-    channelLimit,
-    incomingBandwidth,
-    outgoingBandwidth,
+  const pointer = afterCallbacks(() =>
+    enet_host_create(
+      toNativeAddressOrNull(address),
+      peerCount,
+      channelLimit,
+      incomingBandwidth,
+      outgoingBandwidth,
+    ),
   );
-
-  throwCallbackError();
 
   return pointer === null ? null : wrapHost(pointer);
 };
@@ -86,10 +86,11 @@ const create = (
 const destroy = (host: IENetHost): void => {
   const pointer = host[nativePointer];
 
-  enet_host_destroy(pointer);
-  forgetHost(pointer);
-  forgetPeers(pointer);
-  throwCallbackError();
+  afterCallbacks(() => {
+    enet_host_destroy(pointer);
+    forgetHost(pointer);
+    forgetPeers(pointer);
+  });
 };
 
 const connect = (
@@ -98,14 +99,14 @@ const connect = (
   channelCount: number,
   data: number,
 ): IENetPeer | null => {
-  const pointer = enet_host_connect(
-    host[nativePointer],
-    toNativeAddress(address),
-    channelCount,
-    data,
+  const pointer = afterCallbacks(() =>
+    enet_host_connect(
+      host[nativePointer],
+      toNativeAddress(address),
+      channelCount,
+      data,
+    ),
   );
-
-  throwCallbackError();
 
   return pointer === null ? null : peerOf(host[nativePointer], pointer);
 };
@@ -131,8 +132,9 @@ const service = (host: IENetHost, timeout: number): IENetEvent => {
 };
 
 const flush = (host: IENetHost): void => {
-  enet_host_flush(host[nativePointer]);
-  throwCallbackError();
+  afterCallbacks(() => {
+    enet_host_flush(host[nativePointer]);
+  });
 };
 
 const broadcast = (
@@ -140,8 +142,9 @@ const broadcast = (
   channelID: number,
   packet: IENetPacket,
 ): void => {
-  enet_host_broadcast(host[nativePointer], channelID, packet[nativePointer]);
-  throwCallbackError();
+  afterCallbacks(() => {
+    enet_host_broadcast(host[nativePointer], channelID, packet[nativePointer]);
+  });
 };
 
 const channelLimit = (host: IENetHost, limit: number): void => {

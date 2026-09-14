@@ -1,7 +1,7 @@
 import koffi from "koffi";
 
 import { readAddress } from "./address.js";
-import { throwCallbackError } from "./callbacks.js";
+import { afterCallbacks } from "./callbacks.js";
 import {
   enetPeer,
   enet_peer_disconnect,
@@ -91,17 +91,10 @@ const send = (
   peer: IENetPeer,
   channelID: number,
   packet: IENetPacket,
-): number => {
-  const result = enet_peer_send(
-    peer[nativePointer],
-    channelID,
-    packet[nativePointer],
+): number =>
+  afterCallbacks(() =>
+    enet_peer_send(peer[nativePointer], channelID, packet[nativePointer]),
   );
-
-  throwCallbackError();
-
-  return result;
-};
 
 // Like enet_peer_receive, returning the channelID out-parameter with the packet
 const receive = (peer: IENetPeer): IENetPeerReceive | null => {
@@ -115,8 +108,9 @@ const receive = (peer: IENetPeer): IENetPeerReceive | null => {
 };
 
 const ping = (peer: IENetPeer): void => {
-  enet_peer_ping(peer[nativePointer]);
-  throwCallbackError();
+  afterCallbacks(() => {
+    enet_peer_ping(peer[nativePointer]);
+  });
 };
 
 const pingInterval = (peer: IENetPeer, interval: number): void => {
@@ -138,23 +132,27 @@ const timeout = (
 };
 
 const reset = (peer: IENetPeer): void => {
-  enet_peer_reset(peer[nativePointer]);
-  throwCallbackError();
+  afterCallbacks(() => {
+    enet_peer_reset(peer[nativePointer]);
+  });
 };
 
 const disconnect = (peer: IENetPeer, data: number): void => {
-  enet_peer_disconnect(peer[nativePointer], data);
-  throwCallbackError();
+  afterCallbacks(() => {
+    enet_peer_disconnect(peer[nativePointer], data);
+  });
 };
 
 const disconnectNow = (peer: IENetPeer, data: number): void => {
-  enet_peer_disconnect_now(peer[nativePointer], data);
-  throwCallbackError();
+  afterCallbacks(() => {
+    enet_peer_disconnect_now(peer[nativePointer], data);
+  });
 };
 
 const disconnectLater = (peer: IENetPeer, data: number): void => {
-  enet_peer_disconnect_later(peer[nativePointer], data);
-  throwCallbackError();
+  afterCallbacks(() => {
+    enet_peer_disconnect_later(peer[nativePointer], data);
+  });
 };
 
 const throttleConfigure = (
@@ -163,13 +161,14 @@ const throttleConfigure = (
   acceleration: number,
   deceleration: number,
 ): void => {
-  enet_peer_throttle_configure(
-    peer[nativePointer],
-    interval,
-    acceleration,
-    deceleration,
-  );
-  throwCallbackError();
+  afterCallbacks(() => {
+    enet_peer_throttle_configure(
+      peer[nativePointer],
+      interval,
+      acceleration,
+      deceleration,
+    );
+  });
 };
 
 export {

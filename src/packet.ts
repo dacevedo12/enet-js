@@ -1,7 +1,7 @@
 import koffi from "koffi";
 
 import { toNativeBuffers } from "./buffers.js";
-import { guardVoidCallback, throwCallbackError } from "./callbacks.js";
+import { afterCallbacks, guardVoidCallback } from "./callbacks.js";
 import { ENetPacketFlag } from "./enums.js";
 import {
   enetPacket,
@@ -90,25 +90,21 @@ const create = (
   data: Buffer,
   flags: number = ENetPacketFlag.none,
 ): IENetPacket | null => {
-  const pointer = enet_packet_create(data, data.length, flags);
-
-  throwCallbackError();
+  const pointer = afterCallbacks(() =>
+    enet_packet_create(data, data.length, flags),
+  );
 
   return pointer === null ? null : wrapPacket(pointer);
 };
 
 const destroy = (packet: IENetPacket): void => {
-  enet_packet_destroy(packet[nativePointer]);
-  throwCallbackError();
+  afterCallbacks(() => {
+    enet_packet_destroy(packet[nativePointer]);
+  });
 };
 
-const resize = (packet: IENetPacket, dataLength: number): number => {
-  const result = enet_packet_resize(packet[nativePointer], dataLength);
-
-  throwCallbackError();
-
-  return result;
-};
+const resize = (packet: IENetPacket, dataLength: number): number =>
+  afterCallbacks(() => enet_packet_resize(packet[nativePointer], dataLength));
 
 const crc32 = (buffers: readonly Buffer[]): number =>
   enet_crc32(toNativeBuffers(buffers), buffers.length);

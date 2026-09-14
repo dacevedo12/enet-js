@@ -276,6 +276,10 @@ Buffers read from handles are views of ENet's memory, not copies, so copy one
 to keep its contents after the memory is freed. A `Buffer` you ask ENet to keep
 rather than copy must stay referenced for as long as ENet may use it.
 
+A field that points to memory, such as `packet.data`, is read on each access.
+Read it again after a call that can move that memory, such as `enet.packet.resize`
+growing a packet.
+
 ## From C to JavaScript
 
 enet-js mirrors ENet's C API, with a few mechanical translations:
@@ -302,6 +306,10 @@ enet-js mirrors ENet's C API, with a few mechanical translations:
   to `host.checksum` stores ENet's own function, so no JavaScript runs for each
   datagram. If a callback throws, ENet sees a failure from it, and the enet-js
   function that was running rethrows the error once ENet returns.
+- **Callback arguments:** `Buffer`s that a callback receives are views of ENet's
+  memory, valid only while the callback runs, so copy what you need to keep. A
+  compressor object given to several hosts has its `destroy` called once for
+  each host.
 - **Allocators:** `enet.initializeWithCallbacks` only takes `noMemory`.
   JavaScript has no native memory for a `malloc` to return, so ENet keeps its
   own allocator.
