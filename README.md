@@ -293,7 +293,9 @@ enet-js mirrors ENet's C API, with a few mechanical translations:
   value instead, or `null` when C reports a failure. When C's return value means
   more than success or failure, both come back in one object, such as the
   `result` and `address` of `enet.socket.receive`. `enet.host.service` and
-  `enet.host.checkEvents` return the event.
+  `enet.host.checkEvents` return the event, with type `none` when there is none.
+  A failure from ENet, such as a socket error or an intercept returning -1,
+  also returns a `none` event, so it can't be told apart.
 - **Buffers:** an `ENetBuffer` array is an array of `Buffer`s, and its length
   replaces the count. A socket set is a `Set` of sockets, which
   `enet.socketset.select` updates in place, as C does with `fd_set`.
@@ -304,8 +306,13 @@ enet-js mirrors ENet's C API, with a few mechanical translations:
   functions. `host.intercept` also receives the datagram and its sender, which
   C code reads from host fields ENet doesn't document. Assigning `enet.crc32`
   to `host.checksum` stores ENet's own function, so no JavaScript runs for each
-  datagram. If a callback throws, ENet sees a failure from it, and the enet-js
-  function that was running rethrows the error once ENet returns.
+  datagram.
+- **Callback errors:** if a callback throws, ENet sees a failure from it, and
+  the enet-js function that was running rethrows the error once ENet returns.
+  If several callbacks throw during one call, only the first error is thrown.
+  An event that `enet.host.service` or `enet.host.checkEvents` had already
+  taken from ENet isn't lost: that host's next `service` or `checkEvents` call
+  returns it before doing any I/O.
 - **Callback arguments:** `Buffer`s that a callback receives are views of ENet's
   memory, valid only while the callback runs, so copy what you need to keep. A
   compressor object given to several hosts has its `destroy` called once for

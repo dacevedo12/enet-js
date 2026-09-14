@@ -13,6 +13,7 @@ import {
   enet_host_destroy,
   enet_host_flush,
   enet_host_service,
+  enet_packet_destroy,
 } from "./native/index.js";
 import { wrapPacket } from "./packet.js";
 import { forgetPeers, peerOf } from "./peer.js";
@@ -27,6 +28,9 @@ import { nativePointer } from "./structs.js";
 import { nonNull } from "./util.js";
 
 const UNSET = 0;
+
+// Events that service or checkEvents took from ENet before a callback threw, returned by the host's next call
+const pendingEvents = new Map<bigint, IENetEvent>();
 
 const emptyEvent = (): NativeEvent => ({
   channelID: UNSET,
@@ -63,6 +67,51 @@ const formatEvent = (host: IENetHost, event: NativeEvent): IENetEvent => {
   return { channelID, data, packet: null, peer, type: event.type };
 };
 
+// Removes and returns a host's pending event
+const takePendingEvent = (host: bigint): IENetEvent | undefined => {
+  const pending = pendingEvents.get(host);
+
+  pendingEvents.delete(host);
+
+  return pending;
+};
+
+// Rethrows a callback error, keeping the event ENet had already taken from its queue for the host's next call
+const throwKeepingEvent = (host: bigint, event: IENetEvent): void => {
+  try {
+    throwCallbackError();
+  } catch (error) {
+    if (event.type !== ENetEventType.none) {
+      pendingEvents.set(host, event);
+    }
+
+    throw error;
+  }
+};
+
+// Runs a native call that fills in an event, after returning any pending event
+const dispatchEvent = (
+  host: IENetHost,
+  run: (event: NativeEvent) => void,
+): IENetEvent => {
+  const pointer = host[nativePointer];
+  const pending = takePendingEvent(pointer);
+
+  if (pending !== undefined) {
+    return pending;
+  }
+
+  const nativeEvent = emptyEvent();
+
+  run(nativeEvent);
+
+  const event = formatEvent(host, nativeEvent);
+
+  throwKeepingEvent(pointer, event);
+
+  return event;
+};
+
 const create = (
   address: IENetAddress | null,
   peerCount: number,
@@ -85,8 +134,14 @@ const create = (
 
 const destroy = (host: IENetHost): void => {
   const pointer = host[nativePointer];
+  const pending = takePendingEvent(pointer);
 
   afterCallbacks(() => {
+    // The app never got a pending RECEIVE, so its packet goes with the host
+    if (pending?.type === ENetEventType.receive) {
+      enet_packet_destroy(pending.packet[nativePointer]);
+    }
+
     enet_host_destroy(pointer);
     forgetHost(pointer);
     forgetPeers(pointer);
@@ -112,24 +167,16 @@ const connect = (
 };
 
 // Like enet_host_check_events, returning the event instead of filling it in
-const checkEvents = (host: IENetHost): IENetEvent => {
-  const event = emptyEvent();
-
-  enet_host_check_events(host[nativePointer], event);
-  throwCallbackError();
-
-  return formatEvent(host, event);
-};
+const checkEvents = (host: IENetHost): IENetEvent =>
+  dispatchEvent(host, (event) => {
+    enet_host_check_events(host[nativePointer], event);
+  });
 
 // Like enet_host_service, returning the event instead of filling it in
-const service = (host: IENetHost, timeout: number): IENetEvent => {
-  const event = emptyEvent();
-
-  enet_host_service(host[nativePointer], event, timeout);
-  throwCallbackError();
-
-  return formatEvent(host, event);
-};
+const service = (host: IENetHost, timeout: number): IENetEvent =>
+  dispatchEvent(host, (event) => {
+    enet_host_service(host[nativePointer], event, timeout);
+  });
 
 const flush = (host: IENetHost): void => {
   afterCallbacks(() => {

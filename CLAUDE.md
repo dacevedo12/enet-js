@@ -116,7 +116,9 @@ expose pointers or Koffi.
   that isn't a number as an error, since ENet would otherwise get a stale value
 - Every wrapper whose native call can run a JS callback or allocate wraps that
   call in `afterCallbacks`, which rethrows the first error a callback threw.
-  `host.service` and `host.checkEvents` call `throwCallbackError()` themselves
+  `host.service` and `host.checkEvents` go through `dispatchEvent` in `host.ts`
+  instead: when a callback threw, they keep the event ENet had taken for the
+  host's next call, which `host.destroy` drops
 - `Buffer`s passed to JS callbacks are views valid only during the callback, and
   a compressor object's `destroy` runs once for each host it was given to
 

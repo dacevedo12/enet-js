@@ -10,13 +10,18 @@ import {
   withHosts,
 } from "./fixtures.js";
 import type { IENetHost } from "./index.js";
-import { ENetEventType } from "./index.js";
+import { ENetEventType, ENetSocketType, enet } from "./index.js";
 
 vi.setConfig({ testTimeout: 10_000 });
 
 const PORT = 9103;
 const IGNORE = 0;
 const FAIL = -1;
+const CONSUME = 1;
+const NO_WAIT = 0;
+const ONE_CALL = 1;
+const DATAGRAMS = 3;
+const DATAGRAM = "not an ENet datagram";
 const NOTHING = 0;
 const MESSAGE = "intercept failed";
 const address = localAddress(PORT);
@@ -39,6 +44,33 @@ const withHostPair = (
       run(server, client);
     });
   });
+};
+
+// Queues datagrams on the server's socket, then counts the intercept calls one service makes
+const interceptCallsInOneService = (
+  server: IENetHost,
+  verdict: number,
+): number => {
+  const sender = enet.socket.create(ENetSocketType.datagram);
+  const calls: number[] = [];
+
+  server.intercept = (_host, data): number => {
+    calls.push(data.length);
+
+    return verdict;
+  };
+
+  try {
+    for (const datagram of Array.from({ length: DATAGRAMS }, () => DATAGRAM)) {
+      enet.socket.send(sender, address, [Buffer.from(datagram)]);
+    }
+
+    enet.host.service(server, NO_WAIT);
+  } finally {
+    enet.socket.destroy(sender);
+  }
+
+  return calls.length;
 };
 
 describe("host intercept", () => {
@@ -75,17 +107,22 @@ describe("host intercept", () => {
       expect(server.intercept).toBeTypeOf("function");
     });
   });
+});
 
-  it("stops the host from seeing events when it fails", () => {
+describe("host intercept results", () => {
+  it("stops service at the first datagram when it returns -1", () => {
     expect.hasAssertions();
 
-    withHostPair((server, client) => {
-      server.intercept = (): number => FAIL;
-      connectPeer(client, address);
+    withHostPair((server) => {
+      expect(interceptCallsInOneService(server, FAIL)).toBe(ONE_CALL);
+    });
+  });
 
-      expect(() => serviceUntil(server, client, ENetEventType.connect)).toThrow(
-        "No event",
-      );
+  it("lets service go on to the next datagram when it returns 1", () => {
+    expect.hasAssertions();
+
+    withHostPair((server) => {
+      expect(interceptCallsInOneService(server, CONSUME)).toBe(DATAGRAMS);
     });
   });
 });
