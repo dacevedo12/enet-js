@@ -6,9 +6,6 @@ networking library.
 This package uses [Koffi](https://koffi.dev/) to provide a foreign function
 interface for the native C library
 
-Note that some ENet functions have not been covered yet, so feel free to
-contribute the ones you need
-
 ## Versioning
 
 [![npm (tag)](https://img.shields.io/npm/v/enet-js/1.2x)](https://www.npmjs.com/package/enet-js)
@@ -248,32 +245,25 @@ if (event.type === ENetEventType.connect) {
 }
 ```
 
-## Handles
-
-Objects that stand for memory ENet allocates are thin handles: their fields read
-ENet's memory each time you access them instead of copying it, and they never
-expose pointers or Koffi. Everything else this library returns, such as events,
-is a plain object.
-
-Handles follow the C API's rules on lifetimes and ownership, and enet-js doesn't
-check them. Using a handle after its memory is freed, whether you freed it or
-ENet did, is undefined behaviour and can crash the process, as it would in C.
-ENet's documentation for the matching C function tells you who owns what.
-
-Handles keep C's identity too: the same ENet struct always comes back as the
-same object, so handles can be compared with `===` and used as `Map` keys. When
-ENet reuses a struct for something new, the object you kept refers to the new
-contents.
-
-Buffers read from handles are views of ENet's memory, not copies, so copy one
-to keep its contents after the memory is freed. A `Buffer` you ask ENet to keep
-rather than copy must stay referenced for as long as ENet may use it.
-
 ## Docs
 
-This package aims to serve only as a compatibility layer without expanding the
-functionality, which means the functions and data structures mirror the native
-ones, whose docs can be found at <http://enet.bespin.org/>.
+enet-js is a thin layer over ENet's C API that adds no functionality of its
+own, so [ENet's documentation](http://enet.bespin.org/) applies. It also ships
+[TypeScript](https://www.typescriptlang.org/) type definitions.
 
-This package also provides [TypeScript](https://www.typescriptlang.org/) type
-definitions to help ensure proper usage.
+Where a C pattern doesn't fit JavaScript, it's translated:
+
+- Functions are grouped and camelCased: `enet_host_service` is
+  `enet.host.service`.
+- Out-parameters become return values, with `null` when the call fails.
+- Arrays of buffers are arrays of `Buffer`s, and application data fields hold
+  any JavaScript value.
+- Callbacks are JavaScript functions. If one throws, the error is rethrown once
+  ENet returns.
+
+Objects backed by ENet's memory, such as hosts, peers and packets, are thin
+handles: their fields read that memory on access, and only the fields ENet
+documents as writable can be assigned. Like C pointers, the same ENet object
+always comes back as the same handle, and buffers are views of ENet's memory
+rather than copies. C's lifetime and ownership rules apply without checks, so
+using a handle or buffer after ENet frees its memory can crash the process.

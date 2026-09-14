@@ -1,16 +1,22 @@
+import { toNativeAddress, toNativeAddressOrNull } from "./address.js";
+import { afterCallbacks, throwCallbackError } from "./callbacks.js";
 import { ENetEventType } from "./enums.js";
-import type { NativeAddress, NativeEvent } from "./native/index.js";
+import { wrapHost } from "./host-handle.js";
+import type { NativeEvent } from "./native/index.js";
 import {
+  enet_host_bandwidth_limit,
   enet_host_broadcast,
+  enet_host_channel_limit,
+  enet_host_check_events,
   enet_host_connect,
   enet_host_create,
   enet_host_destroy,
   enet_host_flush,
   enet_host_service,
+  enet_packet_destroy,
 } from "./native/index.js";
-import type { NativePointer } from "./native/pointers.js";
 import { wrapPacket } from "./packet.js";
-import { wrapPeer } from "./peer.js";
+import { forgetPeers, peerOf } from "./peer.js";
 import type {
   IENetAddress,
   IENetEvent,
@@ -19,39 +25,20 @@ import type {
   IENetPeer,
 } from "./structs.js";
 import { nativePointer } from "./structs.js";
-import type { HandlePrototype } from "./util.js";
-import { createHandle, ipToLong, nonNull } from "./util.js";
+import { nonNull } from "./util.js";
 
 const UNSET = 0;
 
-// One object per peer pointer for each host, so peers compare like ENetPeer * in C
-const hostPrototype: HandlePrototype<IENetHost> = {};
+// Events that service or checkEvents took from ENet before a callback threw, returned by the host's next call
+const pendingEvents = new Map<bigint, IENetEvent>();
 
-const hostPeers = new Map<bigint, Map<bigint, IENetPeer>>();
-
-const formatAddress = (address: IENetAddress): NativeAddress => ({
-  host: ipToLong(address.host),
-  port: address.port,
+const emptyEvent = (): NativeEvent => ({
+  channelID: UNSET,
+  data: UNSET,
+  packet: null,
+  peer: null,
+  type: ENetEventType.none,
 });
-
-const peerOf = (
-  host: IENetHost,
-  pointer: NativePointer<"ENetPeer">,
-): IENetPeer => {
-  const hostPointer = host[nativePointer];
-  const peers = hostPeers.get(hostPointer) ?? new Map<bigint, IENetPeer>();
-  const known = peers.get(pointer);
-
-  if (known !== undefined) {
-    return known;
-  }
-
-  const peer = wrapPeer(pointer);
-
-  hostPeers.set(hostPointer, peers.set(pointer, peer));
-
-  return peer;
-};
 
 const formatEvent = (host: IENetHost, event: NativeEvent): IENetEvent => {
   const { channelID, data } = event;
@@ -61,7 +48,7 @@ const formatEvent = (host: IENetHost, event: NativeEvent): IENetEvent => {
   }
 
   const peer = peerOf(
-    host,
+    host[nativePointer],
     nonNull(event.peer, "ENet reported an event without a peer"),
   );
 
@@ -80,29 +67,82 @@ const formatEvent = (host: IENetHost, event: NativeEvent): IENetEvent => {
   return { channelID, data, packet: null, peer, type: event.type };
 };
 
+// Removes and returns a host's pending event
+const takePendingEvent = (host: bigint): IENetEvent | undefined => {
+  const pending = pendingEvents.get(host);
+
+  pendingEvents.delete(host);
+
+  return pending;
+};
+
+// Rethrows a callback error, keeping the event ENet had already taken from its queue for the host's next call
+const throwKeepingEvent = (host: bigint, event: IENetEvent): void => {
+  try {
+    throwCallbackError();
+  } catch (error) {
+    if (event.type !== ENetEventType.none) {
+      pendingEvents.set(host, event);
+    }
+
+    throw error;
+  }
+};
+
+// Runs a native call that fills in an event, after returning any pending event
+const dispatchEvent = (
+  host: IENetHost,
+  run: (event: NativeEvent) => void,
+): IENetEvent => {
+  const pointer = host[nativePointer];
+  const pending = takePendingEvent(pointer);
+
+  if (pending !== undefined) {
+    return pending;
+  }
+
+  const nativeEvent = emptyEvent();
+
+  run(nativeEvent);
+
+  const event = formatEvent(host, nativeEvent);
+
+  throwKeepingEvent(pointer, event);
+
+  return event;
+};
+
 const create = (
   address: IENetAddress | null,
   peerCount: number,
   incomingBandwidth: number,
   outgoingBandwidth: number,
 ): IENetHost | null => {
-  const pointer = enet_host_create(
-    address === null ? null : formatAddress(address),
-    peerCount,
-    incomingBandwidth,
-    outgoingBandwidth,
+  const pointer = afterCallbacks(() =>
+    enet_host_create(
+      toNativeAddressOrNull(address),
+      peerCount,
+      incomingBandwidth,
+      outgoingBandwidth,
+    ),
   );
 
-  if (pointer === null) {
-    return null;
-  }
-
-  return createHandle<IENetHost>(hostPrototype, pointer);
+  return pointer === null ? null : wrapHost(pointer);
 };
 
 const destroy = (host: IENetHost): void => {
-  enet_host_destroy(host[nativePointer]);
-  hostPeers.delete(host[nativePointer]);
+  const pointer = host[nativePointer];
+  const pending = takePendingEvent(pointer);
+
+  afterCallbacks(() => {
+    // The app never got a pending RECEIVE, so its packet goes with the host
+    if (pending?.type === ENetEventType.receive) {
+      enet_packet_destroy(pending.packet[nativePointer]);
+    }
+
+    enet_host_destroy(pointer);
+    forgetPeers(pointer);
+  });
 };
 
 const connect = (
@@ -110,31 +150,33 @@ const connect = (
   address: IENetAddress,
   channelCount: number,
 ): IENetPeer | null => {
-  const pointer = enet_host_connect(
-    host[nativePointer],
-    formatAddress(address),
-    channelCount,
+  const pointer = afterCallbacks(() =>
+    enet_host_connect(
+      host[nativePointer],
+      toNativeAddress(address),
+      channelCount,
+    ),
   );
 
-  return pointer === null ? null : peerOf(host, pointer);
+  return pointer === null ? null : peerOf(host[nativePointer], pointer);
 };
 
-const service = (host: IENetHost, timeout: number): IENetEvent => {
-  const event: NativeEvent = {
-    channelID: UNSET,
-    data: UNSET,
-    packet: null,
-    peer: null,
-    type: ENetEventType.none,
-  };
+// Like enet_host_check_events, returning the event instead of filling it in
+const checkEvents = (host: IENetHost): IENetEvent =>
+  dispatchEvent(host, (event) => {
+    enet_host_check_events(host[nativePointer], event);
+  });
 
-  enet_host_service(host[nativePointer], event, timeout);
-
-  return formatEvent(host, event);
-};
+// Like enet_host_service, returning the event instead of filling it in
+const service = (host: IENetHost, timeout: number): IENetEvent =>
+  dispatchEvent(host, (event) => {
+    enet_host_service(host[nativePointer], event, timeout);
+  });
 
 const flush = (host: IENetHost): void => {
-  enet_host_flush(host[nativePointer]);
+  afterCallbacks(() => {
+    enet_host_flush(host[nativePointer]);
+  });
 };
 
 const broadcast = (
@@ -142,7 +184,35 @@ const broadcast = (
   channelID: number,
   packet: IENetPacket,
 ): void => {
-  enet_host_broadcast(host[nativePointer], channelID, packet[nativePointer]);
+  afterCallbacks(() => {
+    enet_host_broadcast(host[nativePointer], channelID, packet[nativePointer]);
+  });
 };
 
-export { broadcast, connect, create, destroy, flush, service };
+const channelLimit = (host: IENetHost, limit: number): void => {
+  enet_host_channel_limit(host[nativePointer], limit);
+};
+
+const bandwidthLimit = (
+  host: IENetHost,
+  incomingBandwidth: number,
+  outgoingBandwidth: number,
+): void => {
+  enet_host_bandwidth_limit(
+    host[nativePointer],
+    incomingBandwidth,
+    outgoingBandwidth,
+  );
+};
+
+export {
+  bandwidthLimit,
+  broadcast,
+  channelLimit,
+  checkEvents,
+  connect,
+  create,
+  destroy,
+  flush,
+  service,
+};

@@ -1,46 +1,88 @@
 import koffi from "koffi";
 
+import { readAddress } from "./address.js";
+import { afterCallbacks } from "./callbacks.js";
 import {
-  enetAddress,
   enetPeer,
   enet_peer_disconnect,
+  enet_peer_disconnect_later,
+  enet_peer_disconnect_now,
+  enet_peer_ping,
+  enet_peer_receive,
   enet_peer_reset,
   enet_peer_send,
+  enet_peer_throttle_configure,
 } from "./native/index.js";
 import type { NativePointer } from "./native/pointers.js";
-import type { IENetAddress, IENetPacket, IENetPeer } from "./structs.js";
+import { wrapPacket } from "./packet.js";
+import type {
+  IENetAddress,
+  IENetPacket,
+  IENetPeer,
+  IENetPeerReceive,
+} from "./structs.js";
 import { nativePointer } from "./structs.js";
 import type { HandlePrototype } from "./util.js";
-import { createHandle, ipFromLong, readNumber } from "./util.js";
+import { createHandle, readNumber } from "./util.js";
 
+const NO_CHANNEL = 0;
 const ADDRESS_OFFSET = koffi.offsetof(enetPeer, "address");
-const HOST_OFFSET = ADDRESS_OFFSET + koffi.offsetof(enetAddress, "host");
-const PORT_OFFSET = ADDRESS_OFFSET + koffi.offsetof(enetAddress, "port");
+const CHANNEL_COUNT_OFFSET = koffi.offsetof(enetPeer, "channelCount");
+const INCOMING_BANDWIDTH_OFFSET = koffi.offsetof(enetPeer, "incomingBandwidth");
 const MTU_OFFSET = koffi.offsetof(enetPeer, "mtu");
+const OUTGOING_BANDWIDTH_OFFSET = koffi.offsetof(enetPeer, "outgoingBandwidth");
+const PACKET_LOSS_OFFSET = koffi.offsetof(enetPeer, "packetLoss");
+const ROUND_TRIP_TIME_OFFSET = koffi.offsetof(enetPeer, "roundTripTime");
 
-const peerPrototype: HandlePrototype<IENetPeer> = {
+const peerPrototype: HandlePrototype<IENetPeer, "data"> = {
   get address(): IENetAddress {
-    const pointer = this[nativePointer];
-
-    return {
-      host: ipFromLong(readNumber(pointer, HOST_OFFSET, "uint32")),
-      port: readNumber(pointer, PORT_OFFSET, "uint16"),
-    };
+    return readAddress(this[nativePointer], ADDRESS_OFFSET);
+  },
+  get channelCount(): number {
+    return readNumber(this[nativePointer], CHANNEL_COUNT_OFFSET, "size_t");
+  },
+  get incomingBandwidth(): number {
+    return readNumber(this[nativePointer], INCOMING_BANDWIDTH_OFFSET, "uint32");
   },
   get mtu(): number {
     return readNumber(this[nativePointer], MTU_OFFSET, "uint16");
   },
+  get outgoingBandwidth(): number {
+    return readNumber(this[nativePointer], OUTGOING_BANDWIDTH_OFFSET, "uint32");
+  },
+  get packetLoss(): number {
+    return readNumber(this[nativePointer], PACKET_LOSS_OFFSET, "uint32");
+  },
+  get roundTripTime(): number {
+    return readNumber(this[nativePointer], ROUND_TRIP_TIME_OFFSET, "uint32");
+  },
 };
 
-const wrapPeer = (pointer: NativePointer<"ENetPeer">): IENetPeer =>
-  createHandle<IENetPeer>(peerPrototype, pointer);
+// One object per peer pointer for each host, so peers compare like ENetPeer * in C
+const hostPeers = new Map<bigint, Map<bigint, IENetPeer>>();
 
-const disconnect = (peer: IENetPeer, data: number): void => {
-  enet_peer_disconnect(peer[nativePointer], data);
+const peerOf = (
+  host: bigint,
+  pointer: NativePointer<"ENetPeer">,
+): IENetPeer => {
+  const peers = hostPeers.get(host) ?? new Map<bigint, IENetPeer>();
+  const known = peers.get(pointer);
+
+  if (known !== undefined) {
+    return known;
+  }
+
+  const peer = createHandle<IENetPeer, "data">(peerPrototype, pointer, {
+    data: null,
+  });
+
+  hostPeers.set(host, peers.set(pointer, peer));
+
+  return peer;
 };
 
-const reset = (peer: IENetPeer): void => {
-  enet_peer_reset(peer[nativePointer]);
+const forgetPeers = (host: bigint): void => {
+  hostPeers.delete(host);
 };
 
 const send = (
@@ -48,6 +90,76 @@ const send = (
   channelID: number,
   packet: IENetPacket,
 ): number =>
-  enet_peer_send(peer[nativePointer], channelID, packet[nativePointer]);
+  afterCallbacks(() =>
+    enet_peer_send(peer[nativePointer], channelID, packet[nativePointer]),
+  );
 
-export { disconnect, reset, send, wrapPeer };
+// Like enet_peer_receive, returning the channelID out-parameter with the packet
+const receive = (peer: IENetPeer): IENetPeerReceive | null => {
+  const channelID: [number] = [NO_CHANNEL];
+  const packet = enet_peer_receive(peer[nativePointer], channelID);
+  const [channel] = channelID;
+
+  return packet === null
+    ? null
+    : { channelID: channel, packet: wrapPacket(packet) };
+};
+
+const ping = (peer: IENetPeer): void => {
+  afterCallbacks(() => {
+    enet_peer_ping(peer[nativePointer]);
+  });
+};
+
+const reset = (peer: IENetPeer): void => {
+  afterCallbacks(() => {
+    enet_peer_reset(peer[nativePointer]);
+  });
+};
+
+const disconnect = (peer: IENetPeer, data: number): void => {
+  afterCallbacks(() => {
+    enet_peer_disconnect(peer[nativePointer], data);
+  });
+};
+
+const disconnectNow = (peer: IENetPeer, data: number): void => {
+  afterCallbacks(() => {
+    enet_peer_disconnect_now(peer[nativePointer], data);
+  });
+};
+
+const disconnectLater = (peer: IENetPeer, data: number): void => {
+  afterCallbacks(() => {
+    enet_peer_disconnect_later(peer[nativePointer], data);
+  });
+};
+
+const throttleConfigure = (
+  peer: IENetPeer,
+  interval: number,
+  acceleration: number,
+  deceleration: number,
+): void => {
+  afterCallbacks(() => {
+    enet_peer_throttle_configure(
+      peer[nativePointer],
+      interval,
+      acceleration,
+      deceleration,
+    );
+  });
+};
+
+export {
+  disconnect,
+  disconnectLater,
+  disconnectNow,
+  forgetPeers,
+  peerOf,
+  ping,
+  receive,
+  reset,
+  send,
+  throttleConfigure,
+};

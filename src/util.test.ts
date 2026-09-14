@@ -29,6 +29,13 @@ describe("ipFromLong", () => {
 });
 
 describe("nonNull", () => {
+  it("throws the message for undefined", () => {
+    expect.hasAssertions();
+    expect(() => {
+      nonNull(undefined, MESSAGE);
+    }).toThrow(MESSAGE);
+  });
+
   it("returns a value that is not null", () => {
     expect.hasAssertions();
     expect(nonNull(VALUE, MESSAGE)).toBe(VALUE);

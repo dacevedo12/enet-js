@@ -67,13 +67,19 @@
       {
         "allow": [
           { "from": "package", "name": "Buffer", "package": "@types/node" },
-          { "from": "file", "name": "NativePointer" }
+          { "from": "file", "name": "NativePointer" },
+          { "from": "file", "name": "IENetHost" },
+          { "from": "file", "name": "IENetPacket" },
+          { "from": "file", "name": "IENetPeer" },
+          { "from": "lib", "name": "ReadonlySet" },
+          { "from": "lib", "name": "Set" }
         ]
       }
-    ], // Buffer is mutable by design; tsgolint misreads readonly properties holding the NativePointer brand as mutable
+    ], // Buffer is mutable by design; tsgolint misreads readonly properties holding the NativePointer brand as mutable; handles have the fields ENet documents as writable; socketset.select updates Sets in place like fd_set, and tsgolint treats ReadonlySet methods as mutable
 
     // Deliberate API design
     "max-params": ["error", { "max": 5 }], // wrappers mirror ENet's C signatures; enet_host_create has 5
+    "new-cap": ["error", { "capIsNewExceptionPattern": "^ENET_" }], // ENet's macros keep their C names as functions
     "unicorn/no-null": "off", // null mirrors C's NULL, and Koffi returns null for NULL pointers
 
     // Stricter than the default
