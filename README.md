@@ -6,9 +6,6 @@ networking library.
 This package uses [Koffi](https://koffi.dev/) to provide a foreign function
 interface for the native C library
 
-Note that some ENet functions have not been covered yet, so feel free to
-contribute the ones you need
-
 ## Versioning
 
 [![npm (tag)](https://img.shields.io/npm/v/enet-js/latest)](https://www.npmjs.com/package/enet-js)
@@ -252,81 +249,25 @@ if (event.type === ENetEventType.connect) {
 }
 ```
 
-## Handles
-
-Objects that stand for memory ENet allocates are thin handles: their fields read
-ENet's memory each time you access them instead of copying it, and they never
-expose pointers or Koffi. Everything else this library returns, such as events,
-is a plain object.
-
-Fields that ENet documents as writable can be assigned, which writes to ENet's
-memory. The others are read-only.
-
-Handles follow the C API's rules on lifetimes and ownership, and enet-js doesn't
-check them. Using a handle after its memory is freed, whether you freed it or
-ENet did, is undefined behaviour and can crash the process, as it would in C.
-ENet's documentation for the matching C function tells you who owns what.
-
-Handles keep C's identity too: the same ENet struct always comes back as the
-same object, so handles can be compared with `===` and used as `Map` keys. When
-ENet reuses a struct for something new, the object you kept refers to the new
-contents.
-
-Buffers read from handles are views of ENet's memory, not copies, so copy one
-to keep its contents after the memory is freed. A `Buffer` you ask ENet to keep
-rather than copy must stay referenced for as long as ENet may use it.
-
-A field that points to memory, such as `packet.data`, is read on each access.
-Read it again after a call that can move that memory, such as `enet.packet.resize`
-growing a packet.
-
-## From C to JavaScript
-
-enet-js mirrors ENet's C API, with a few mechanical translations:
-
-- **Names:** `enet_<group>_<name>` becomes `enet.<group>.<name>` in camelCase,
-  so `enet_peer_disconnect_now` is `enet.peer.disconnectNow`. Functions without
-  a group stay on `enet`, such as `enet.crc32`. Enums, constants and macros keep
-  ENet's names, such as `ENetPacketFlag`, `ENET_HOST_ANY` and
-  `ENET_VERSION_CREATE`.
-- **Out-parameters:** a function that fills in an out-parameter returns the
-  value instead, or `null` when C reports a failure. When C's return value means
-  more than success or failure, both come back in one object, such as the
-  `result` and `address` of `enet.socket.receive`. `enet.host.service` and
-  `enet.host.checkEvents` return the event, with type `none` when there is none.
-  A failure from ENet, such as a socket error or an intercept returning -1,
-  also returns a `none` event, so it can't be told apart.
-- **Buffers:** an `ENetBuffer` array is an array of `Buffer`s, and its length
-  replaces the count. A socket set is a `Set` of sockets, which
-  `enet.socketset.select` updates in place, as C does with `fd_set`.
-- **Application data:** `void *` fields meant for the application, such as
-  `peer.data` and `packet.userData`, hold any JavaScript value.
-- **Callbacks:** the callbacks ENet takes, such as `host.checksum`,
-  `host.intercept`, `packet.freeCallback` and compressors, are JavaScript
-  functions. `host.intercept` also receives the datagram and its sender, which
-  C code reads from host fields ENet doesn't document. Assigning `enet.crc32`
-  to `host.checksum` stores ENet's own function, so no JavaScript runs for each
-  datagram.
-- **Callback errors:** if a callback throws, ENet sees a failure from it, and
-  the enet-js function that was running rethrows the error once ENet returns.
-  If several callbacks throw during one call, only the first error is thrown.
-  An event that `enet.host.service` or `enet.host.checkEvents` had already
-  taken from ENet isn't lost: that host's next `service` or `checkEvents` call
-  returns it before doing any I/O. `enet.peer.receive` doesn't return a kept
-  event, so calling it first can return a packet that arrived after it.
-- **Callback arguments:** `Buffer`s that a callback receives are views of ENet's
-  memory, valid only while the callback runs, so copy what you need to keep. A
-  compressor object given to several hosts has its `destroy` called once for
-  each host.
-- **Allocators:** `enet.initializeWithCallbacks` only takes `noMemory`.
-  JavaScript has no native memory for a `malloc` to return, so ENet keeps its
-  own allocator.
-
 ## Docs
 
-This package aims to serve only as a compatibility layer without expanding the
-functionality, which means the functions and data structures mirror the native
-ones, whose docs can be found at <http://enet.bespin.org/>.
+enet-js is a thin layer over ENet's C API that adds no functionality of its
+own, so [ENet's documentation](http://enet.bespin.org/) applies. It also ships
+[TypeScript](https://www.typescriptlang.org/) type definitions.
 
-This package also provides [TypeScript](https://www.typescriptlang.org/) type
-definitions to help ensure proper usage.
+Where a C pattern doesn't fit JavaScript, it's translated:
+
+- Functions are grouped and camelCased: `enet_host_service` is
+  `enet.host.service`.
+- Out-parameters become return values, with `null` when the call fails.
+- Arrays of buffers are arrays of `Buffer`s, and application data fields hold
+  any JavaScript value.
+- Callbacks are JavaScript functions. If one throws, the error is rethrown once
+  ENet returns.
+
+Objects backed by ENet's memory, such as hosts, peers and packets, are thin
+handles: their fields read that memory on access, and only the fields ENet
+documents as writable can be assigned. Like C pointers, the same ENet object
+always comes back as the same handle, and buffers are views of ENet's memory
+rather than copies. C's lifetime and ownership rules apply without checks, so
+using a handle or buffer after ENet frees its memory can crash the process.
