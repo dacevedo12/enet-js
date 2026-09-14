@@ -312,7 +312,8 @@ enet-js mirrors ENet's C API, with a few mechanical translations:
   If several callbacks throw during one call, only the first error is thrown.
   An event that `enet.host.service` or `enet.host.checkEvents` had already
   taken from ENet isn't lost: that host's next `service` or `checkEvents` call
-  returns it before doing any I/O.
+  returns it before doing any I/O. `enet.peer.receive` doesn't return a kept
+  event, so calling it first can return a packet that arrived after it.
 - **Callback arguments:** `Buffer`s that a callback receives are views of ENet's
   memory, valid only while the callback runs, so copy what you need to keep. A
   compressor object given to several hosts has its `destroy` called once for
