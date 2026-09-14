@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import {
+  SERVICE_TIMEOUT_MS,
   connectPeer,
   createClient,
   createServer,
@@ -18,7 +19,6 @@ const PORT = 9103;
 const IGNORE = 0;
 const FAIL = -1;
 const CONSUME = 1;
-const NO_WAIT = 0;
 const ONE_CALL = 1;
 const DATAGRAMS = 3;
 const DATAGRAM = "not an ENet datagram";
@@ -65,7 +65,7 @@ const interceptCallsInOneService = (
       enet.socket.send(sender, address, [Buffer.from(datagram)]);
     }
 
-    enet.host.service(server, NO_WAIT);
+    enet.host.service(server, SERVICE_TIMEOUT_MS);
   } finally {
     enet.socket.destroy(sender);
   }

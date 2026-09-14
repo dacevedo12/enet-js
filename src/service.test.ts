@@ -124,10 +124,10 @@ describe("empty events during service", () => {
           enet.socket.send(sender, address, [Buffer.from(datagram)]);
         }
 
-        expect(() => enet.host.service(server, NO_WAIT)).toThrow(
+        expect(() => enet.host.service(server, SERVICE_TIMEOUT_MS)).toThrow(
           INTERCEPT_ERROR,
         );
-        expect(enet.host.service(server, NO_WAIT).type).toBe(
+        expect(enet.host.service(server, SERVICE_TIMEOUT_MS).type).toBe(
           ENetEventType.none,
         );
         expect(calls).toHaveLength(DATAGRAMS);
