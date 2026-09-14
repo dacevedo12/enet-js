@@ -1,7 +1,7 @@
 import koffi from "koffi";
 
 import { readAddress } from "./address.js";
-import { fromNativeBuffers } from "./buffers.js";
+import { fromNativeBuffers, viewOf } from "./buffers.js";
 import { guardCallback } from "./callbacks.js";
 import {
   crc32Address,
@@ -61,6 +61,12 @@ const MAXIMUM_WAITING_DATA_OFFSET = koffi.offsetof(
 const OUTGOING_BANDWIDTH_OFFSET = koffi.offsetof(enetHost, "outgoingBandwidth");
 const PEER_COUNT_OFFSET = koffi.offsetof(enetHost, "peerCount");
 const PEERS_OFFSET = koffi.offsetof(enetHost, "peers");
+const RECEIVED_ADDRESS_OFFSET = koffi.offsetof(enetHost, "receivedAddress");
+const RECEIVED_DATA_OFFSET = koffi.offsetof(enetHost, "receivedData");
+const RECEIVED_DATA_LENGTH_OFFSET = koffi.offsetof(
+  enetHost,
+  "receivedDataLength",
+);
 const TOTAL_RECEIVED_DATA_OFFSET = koffi.offsetof(
   enetHost,
   "totalReceivedData",
@@ -78,7 +84,7 @@ const checksums = new Map<bigint, JsChecksum>();
 // JS intercepts by host pointer
 const intercepts = new Map<bigint, JsIntercept>();
 
-// One registered callback serves every host, since ENet passes the host to it
+// One registered callback serves every host, since ENet passes the host to it; the datagram, which C reads from undocumented host fields, comes as arguments
 const interceptAddress = koffi.register(
   (host: bigint): number =>
     guardCallback(INTERCEPT_FAILURE, () => {
@@ -86,8 +92,15 @@ const interceptAddress = koffi.register(
         intercepts.get(host),
         "ENet intercepted a datagram for a host without a JS intercept",
       );
-
-      return intercept.handler(intercept.host);
+      const data = viewOf(
+        readPointer(host, RECEIVED_DATA_OFFSET),
+        readNumber(host, RECEIVED_DATA_LENGTH_OFFSET, "size_t"),
+      );
+      return intercept.handler(
+        intercept.host,
+        data,
+        readAddress(host, RECEIVED_ADDRESS_OFFSET),
+      );
     }),
   enetInterceptCallback,
 );

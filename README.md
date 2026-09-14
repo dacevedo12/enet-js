@@ -297,10 +297,11 @@ enet-js mirrors ENet's C API, with a few mechanical translations:
   `peer.data` and `packet.userData`, hold any JavaScript value.
 - **Callbacks:** the callbacks ENet takes, such as `host.checksum`,
   `host.intercept`, `packet.freeCallback` and compressors, are JavaScript
-  functions. Assigning `enet.crc32` to `host.checksum` stores ENet's own
-  function, so no JavaScript runs for each datagram. If a callback throws, ENet
-  sees a failure from it, and the enet-js function that was running rethrows
-  the error once ENet returns.
+  functions. `host.intercept` also receives the datagram and its sender, which
+  C code reads from host fields ENet doesn't document. Assigning `enet.crc32`
+  to `host.checksum` stores ENet's own function, so no JavaScript runs for each
+  datagram. If a callback throws, ENet sees a failure from it, and the enet-js
+  function that was running rethrows the error once ENet returns.
 - **Allocators:** `enet.initializeWithCallbacks` only takes `noMemory`.
   JavaScript has no native memory for a `malloc` to return, so ENet keeps its
   own allocator.

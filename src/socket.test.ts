@@ -73,7 +73,7 @@ describe("datagram sockets", () => {
         );
 
         expect(result).toBe(HELLO.length + WORLD.length);
-        expect(sender_address.host).toBe(LOCALHOST.host);
+        expect(sender_address?.host).toBe(LOCALHOST.host);
         expect(
           Buffer.concat([first, second]).subarray(START, result).toString(),
         ).toBe(HELLO + WORLD);
@@ -98,8 +98,8 @@ describe("socket options", () => {
         enet.socket.getOption(socket, ENetSocketOption.nonblock),
       ).toBeNull();
       expect(
-        enet.socket.receive(socket, [Buffer.alloc(FIRST_LENGTH)]).result,
-      ).toBe(NOTHING_RECEIVED);
+        enet.socket.receive(socket, [Buffer.alloc(FIRST_LENGTH)]),
+      ).toStrictEqual({ address: null, result: NOTHING_RECEIVED });
     });
   });
 

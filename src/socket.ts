@@ -34,6 +34,7 @@ import type {
 import { outValue } from "./util.js";
 
 const UNSET = 0;
+const NOTHING_RECEIVED = 0;
 
 const create = (type: ENetSocketType): number => enet_socket_create(type);
 
@@ -90,7 +91,11 @@ const receive = (
     buffers.length,
   );
 
-  return { address: fromNativeAddress(address), result };
+  // ENet fills in the sender only when it received something
+  return {
+    address: result > NOTHING_RECEIVED ? fromNativeAddress(address) : null,
+    result,
+  };
 };
 
 // Like enet_socket_wait, returning the ready conditions instead of updating them

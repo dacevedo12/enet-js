@@ -12,8 +12,12 @@ interface IENetAddress {
 // Computes the checksum of the datagram held in buffers, like ENetChecksumCallback
 type ENetChecksumCallback = (buffers: readonly Buffer[]) => number;
 
-// Called for each received datagram: 1 consumes it, 0 lets ENet process it, -1 makes service fail
-type ENetInterceptCallback = (host: IENetHost) => number;
+// Called with each received datagram and its sender, where data is only valid during the call: 1 consumes it, 0 lets ENet process it, -1 makes service fail
+type ENetInterceptCallback = (
+  host: IENetHost,
+  data: Buffer,
+  address: IENetAddress,
+) => number;
 
 type ENetPacketFreeCallback = (packet: IENetPacket) => void;
 
@@ -125,9 +129,9 @@ interface IENetSocketAccept {
   readonly socket: number;
 }
 
-// What enet_socket_receive returns along with its address out-parameter
+// What enet_socket_receive returns along with its address out-parameter, null when nothing was received
 interface IENetSocketReceive {
-  readonly address: IENetAddress;
+  readonly address: IENetAddress | null;
   readonly result: number;
 }
 
