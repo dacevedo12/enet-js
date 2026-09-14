@@ -17,9 +17,16 @@ vi.setConfig({ testTimeout: 10_000 });
 const PORT = 9103;
 const IGNORE = 0;
 const FAIL = -1;
-const FIRST_HOST = 0;
+const NOTHING = 0;
 const MESSAGE = "intercept failed";
 const address = localAddress(PORT);
+
+interface Datagram {
+  readonly host: IENetHost;
+  readonly length: number;
+  readonly sender: string;
+  readonly total: number;
+}
 
 const withHostPair = (
   run: (server: IENetHost, client: IENetHost) => void,
@@ -35,14 +42,19 @@ const withHostPair = (
 };
 
 describe("host intercept", () => {
-  it("sees each datagram with its host, then lets ENet process it", () => {
+  it("sees each datagram and its sender, then lets ENet process it", () => {
     expect.hasAssertions();
 
     withHostPair((server, client) => {
-      const hosts: IENetHost[] = [];
+      const datagrams: Datagram[] = [];
 
-      server.intercept = (host): number => {
-        hosts.push(host);
+      server.intercept = (host, data, sender): number => {
+        datagrams.push({
+          host,
+          length: data.length,
+          sender: sender.host,
+          total: host.totalReceivedData,
+        });
 
         return IGNORE;
       };
@@ -51,7 +63,15 @@ describe("host intercept", () => {
       expect(serviceUntil(server, client, ENetEventType.connect).type).toBe(
         ENetEventType.connect,
       );
-      expect(hosts[FIRST_HOST]).toBe(server);
+
+      const [first] = datagrams;
+
+      expect(first?.host).toBe(server);
+      expect(first).toMatchObject({
+        length: first?.total,
+        sender: address.host,
+      });
+      expect(first?.length).toBeGreaterThan(NOTHING);
       expect(server.intercept).toBeTypeOf("function");
     });
   });
