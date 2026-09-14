@@ -116,7 +116,7 @@ describe("packet data", () => {
     enet.packet.destroy(packet);
   });
 
-  it("is empty for an empty payload, which ENet stores as NULL", () => {
+  it("is empty for an empty payload", () => {
     expect.hasAssertions();
 
     const packet = createPacket(Buffer.alloc(EMPTY));

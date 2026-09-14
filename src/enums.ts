@@ -1,1 +1,8 @@
-export { ENetEventType, ENetPacketFlag } from "./native/enums.js";
+export {
+  ENetEventType,
+  ENetPacketFlag,
+  ENetPeerState,
+  ENetSocketOption,
+  ENetSocketType,
+  ENetSocketWait,
+} from "./native/enums.js";

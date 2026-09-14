@@ -51,46 +51,81 @@ which is excluded from the build and coverage.
 
 ### Module Structure
 
-The package exports a single `enet` object that mirrors the native ENet API
-structure:
+The package exports a single `enet` object that mirrors ENet's C API:
+`enet_<group>_<name>` becomes `enet.<group>.<camelCaseName>`, and functions
+without a group (`initialize`, `initializeWithCallbacks`, `deinitialize`) sit
+on `enet` itself.
 
-- `enet.initialize()` / `enet.deinitialize()` - Global lifecycle (from
-  `global.ts`)
-- `enet.host.*` - Host operations: create, destroy, connect, service, broadcast,
-  flush (from `host.ts`)
-- `enet.packet.*` - Packet operations: create, destroy (from `packet.ts`)
-- `enet.peer.*` - Peer operations: send, disconnect, reset (from `peer.ts`)
+- Groups and their modules: `address` (`address.ts`), `host` (`host.ts`, with
+  fields in `host-handle.ts`), `packet` (`packet.ts`), `peer` (`peer.ts`),
+  `socket` (`socket.ts`), `socketset` (`socketset.ts`) and `time` (`time.ts`)
+- ENet 1.2 has no compression, range coder, intercept or per-peer timeouts, so
+  those functions are absent rather than stubbed
+- `constants.ts`, `enums.ts` and `macros.ts` export ENet's constants, enums and
+  macros under their C names
 
 ### Native Bindings Layer (`src/native/`)
 
-- `native/structs.ts` - Koffi struct definitions matching C ENet structures
-  (ENetAddress, ENetPacket, ENetPeer, ENetEvent, etc.)
+- `native/library.ts` - Loads ENet from `ENET_LIB_PATH`, and re-exports
+  `structs.ts` so every struct is declared before a prototype names it
+- `native/address.ts`, `global.ts`, `host.ts`, `packet.ts`, `peer.ts` and
+  `socket.ts` - One binding per ENet function, declared with its C prototype
+  and re-exported by `native/index.ts`
+- `native/structs.ts` - Koffi struct declarations matching the C structs. The
+  `ENetSocket` type, `ENetBuffer` field order and `ENetHost` layout follow the
+  platform; the Windows layouts come from the headers and aren't tested in CI
+- `native/callbacks.ts` - Koffi prototypes for ENet's callback types
 - `native/enums.ts` - ENet enum values, re-exported by `src/enums.ts`
 - `native/pointers.ts` - `NativePointer`, the per-struct pointer type, since
   Koffi 3 pointers are plain BigInts that Koffi doesn't type-check
-- `native/index.ts` - FFI function bindings using `koffi.load()` to call native
-  ENet functions
-- When binding a new ENet function, remove it from the `unbound` list in
+- A new binding must be removed from the `unbound` list in
   `src/native.coverage.test.ts`
 
 ### Handles
 
-Wrapper modules (host.ts, packet.ts, peer.ts) hand out handles: thin objects over
-ENet's structs that don't expose pointers or Koffi.
+Wrapper modules hand out handles: thin objects over ENet's structs that don't
+expose pointers or Koffi.
 
-- The pointer is stored under the `nativePointer` symbol from `structs.ts`,
-  which the package doesn't export. Field getters live on a shared prototype and
-  read ENet's memory with `koffi.decode` at `koffi.offsetof` offsets
+- `createHandle` in `util.ts` stores the pointer under the `nativePointer` symbol
+  from `structs.ts`, which the package doesn't export. Field getters live on a
+  shared prototype and read ENet's memory with `koffi.decode` at
+  `koffi.offsetof` offsets
+- Only fields ENet documents are exposed, and only the ones it documents as
+  writable get setters. JS-only fields (`peer.data`) are own
+  properties created with the handle
 - enet-js stays a thin layer over C by design: it doesn't validate handles or
   track lifetimes, and misuse fails as it would in C. Don't add such checks
-- `host.ts` keeps one peer object per peer pointer for each host, so peers
+- `peer.ts` keeps one peer object per peer pointer for each host, so peers
   compare like `ENetPeer *` in C
-- `packet.data` is a `Buffer` over the packet's memory, like `packet->data`
+- `packet.data` is a `Buffer` over the packet's memory, like `packet->data`,
+  so it moves when `enet.packet.resize` grows the packet
 - IP addresses convert between strings and 32-bit integers in `util.ts`
+
+### C to JavaScript
+
+- Out-parameters become return values: the filled value, or `null` when the C
+  status is negative (`outValue` in `util.ts`). Results that mean more than
+  success come back in an object with the out-parameters
+- `ENetBuffer` arrays are `Buffer[]` (`buffers.ts`). Socket sets are
+  `Set<number>`, encoded as the platform's `fd_set` in `socketset.ts`
+- ENet stores every callback it is given, so JS functions go through
+  `koffi.register`, never as transient functions. Clear the C field before
+  unregistering, since Koffi reuses freed slots, and share one registered
+  callback per kind when ENet passes a key (the packet for free callbacks).
+  `initializeWithCallbacks` registers `noMemory` and `rand` for the rest of the
+  process, or releases them when ENet refuses the callbacks
+- Every JS function ENet calls runs inside `guardCallback` or
+  `guardVoidCallback` (`callbacks.ts`). `guardCallback` also treats a result
+  that isn't a number as an error, since ENet would otherwise get a stale value
+- Every wrapper whose native call can run a JS callback or allocate wraps that
+  call in `afterCallbacks`, which rethrows the first error a callback threw.
+  `host.service` and `host.checkEvents` go through `dispatchEvent` in `host.ts`
+  instead: when a callback threw, they keep the event ENet had taken for the
+  host's next call, which `host.destroy` drops
 
 ### Type Definitions (`src/structs.ts`)
 
-Defines the public handle, address and event types. Event types use
+Defines the public handle, address, callback and event types. Event types use
 discriminated unions based on `ENetEventType`:
 
 - `IENetEventEmpty` (type: none)

@@ -19,34 +19,7 @@ if (enetIncludePath === undefined) {
 }
 
 // ENet functions that are not bound yet, remove each one once it is bound
-const unbound: ReadonlySet<string> = new Set([
-  "enet_address_get_host",
-  "enet_address_get_host_ip",
-  "enet_address_set_host",
-  "enet_host_bandwidth_limit",
-  "enet_host_channel_limit",
-  "enet_host_check_events",
-  "enet_initialize_with_callbacks",
-  "enet_packet_resize",
-  "enet_peer_disconnect_later",
-  "enet_peer_disconnect_now",
-  "enet_peer_ping",
-  "enet_peer_receive",
-  "enet_peer_throttle_configure",
-  "enet_socket_accept",
-  "enet_socket_bind",
-  "enet_socket_connect",
-  "enet_socket_create",
-  "enet_socket_destroy",
-  "enet_socket_listen",
-  "enet_socket_receive",
-  "enet_socket_send",
-  "enet_socket_set_option",
-  "enet_socket_wait",
-  "enet_socketset_select",
-  "enet_time_get",
-  "enet_time_set",
-]);
+const unbound: ReadonlySet<string> = new Set<string>();
 
 const readHeaders = async (): Promise<string> => {
   const headerDirectory = path.join(enetIncludePath, "enet");
