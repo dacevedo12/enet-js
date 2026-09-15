@@ -73,7 +73,14 @@ without a group (`initialize`, `initializeWithCallbacks`, `deinitialize`,
   and re-exported by `native/index.ts`
 - `native/structs.ts` - Koffi struct declarations matching the C structs. The
   `ENetSocket` type, `ENetBuffer` field order and `ENetHost` layout follow the
-  platform; the Windows layouts come from the headers and aren't tested in CI
+  platform; the Windows layouts come from the headers and aren't tested in CI.
+  Two 1.2.5 header quirks affect Windows builds:
+  - `enet.h` selects `win32.h` on `WIN32`, not `_WIN32`, so an MSVC build only
+    gets the Windows types when it defines `WIN32`
+  - The `_MSC_VER_` typo (`protocol.h:50`) leaves `ENetProtocol` unpacked under
+    MSVC, which moves `ENetHost.commands` and every field after it, including
+    the writable `total*` counters. enet-js declares the packed layout that
+    GCC, Clang and MinGW builds use
 - `native/callbacks.ts` - Koffi prototypes for ENet's callback types
 - `native/enums.ts` - ENet enum values, re-exported by `src/enums.ts`
 - `native/pointers.ts` - `NativePointer`, the per-struct pointer type, since
