@@ -18,7 +18,7 @@ The `<major>.<minor>` version matches the supported enet version
 npm install --save-exact enet-js
 ```
 
-**Note:** This package requires Node.js 18 or later.
+**Note:** This package requires Node.js 24 or later.
 
 Before importing enet-js, set the `ENET_LIB_PATH` environment variable to the
 full path of the ENet shared library (including extension, e.g. `.dll`,
@@ -267,3 +267,13 @@ documents as writable can be assigned. Like C pointers, the same ENet object
 always comes back as the same handle, and buffers are views of ENet's memory
 rather than copies. C's lifetime and ownership rules apply without checks, so
 using a handle or buffer after ENet frees its memory can crash the process.
+
+## Development
+
+`nix run .#enet-lint` and `nix run .#enet-test` run the same checks as CI.
+Without Nix, `npm test` needs `ENET_LIB_PATH`, `ENET_INCLUDE_PATH` set to the
+directory containing `enet/enet.h`, and a C compiler (`CC`, default `cc`) to
+check the struct layouts against ENet's headers.
+
+Lint rules are fixed in code rather than turned off; the few exceptions are
+documented in `.oxlintrc.json`.
