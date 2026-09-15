@@ -67,13 +67,13 @@ describe("datagram sockets", () => {
           enet.socket.wait(receiver, ENetSocketWait.receive, WAIT_MS),
         ).toBe(ENetSocketWait.receive);
 
-        const { address: sender_address, result } = enet.socket.receive(
+        const { address: senderAddress, result } = enet.socket.receive(
           receiver,
           [first, second],
         );
 
         expect(result).toBe(HELLO.length + WORLD.length);
-        expect(sender_address?.host).toBe(LOCALHOST.host);
+        expect(senderAddress?.host).toBe(LOCALHOST.host);
         expect(
           Buffer.concat([first, second]).subarray(START, result).toString(),
         ).toBe(HELLO + WORLD);
