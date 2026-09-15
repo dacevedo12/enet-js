@@ -1,6 +1,4 @@
 import { setImmediate as nextTurn } from "node:timers/promises";
-import { setFlagsFromString } from "node:v8";
-import { runInNewContext } from "node:vm";
 
 import koffi from "koffi";
 import { describe, expect, it, vi } from "vitest";
@@ -25,6 +23,7 @@ import type {
   IENetPacket,
 } from "./index.js";
 import { ENET_VERSION_CREATE, ENetEventType, enet } from "./index.js";
+import { nonNull } from "./util.js";
 
 vi.setConfig({ testTimeout: 10_000 });
 
@@ -195,10 +194,10 @@ describe("compressor callbacks", () => {
   it("destroy a compressor once, then forget it", async () => {
     expect.hasAssertions();
 
-    setFlagsFromString("--expose-gc");
-
-    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- the gc function V8 exposes with --expose-gc takes no arguments
-    const collectGarbage = runInNewContext("gc") as () => void;
+    const collectGarbage = nonNull(
+      globalThis.gc,
+      "Run the tests with --expose-gc",
+    );
     const destroyed: string[] = [];
     const compressor = compressAndDestroy(() => {
       destroyed.push(DESTROYED);
