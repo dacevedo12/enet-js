@@ -1,7 +1,7 @@
 import { toNativeAddress, toNativeAddressOrNull } from "./address.js";
 import { afterCallbacks, throwCallbackError } from "./callbacks.js";
 import { ENetEventType } from "./enums.js";
-import { wrapHost } from "./host-handle.js";
+import { forgetHost, wrapHost } from "./host-handle.js";
 import type { NativeEvent } from "./native/index.js";
 import {
   enet_host_bandwidth_limit,
@@ -141,6 +141,7 @@ const destroy = (host: IENetHost): void => {
     }
 
     enet_host_destroy(pointer);
+    forgetHost(pointer);
     forgetPeers(pointer);
   });
 };

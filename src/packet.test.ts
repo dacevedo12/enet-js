@@ -15,6 +15,9 @@ const GROWN_LENGTH = 64;
 const SHRUNK_LENGTH = 2;
 const RESIZE_SUCCESS = 0;
 const START = 0;
+const CHECK_INPUT = "123456789";
+// The CRC-32 of "123456789" (0xcbf43926), which ENet returns in network byte order
+const CHECK_VALUE = 0x26_39_f4_cb;
 const NO_REFERENCES = 0;
 const MESSAGE = "free callback failed";
 const flagCases = [
@@ -104,6 +107,20 @@ describe("packet resize", () => {
     expect(packet.data.toString()).toBe(TEXT.slice(START, SHRUNK_LENGTH));
 
     enet.packet.destroy(packet);
+  });
+});
+
+describe("packet crc32", () => {
+  it("checksums buffers as if their bytes were joined", () => {
+    expect.hasAssertions();
+    expect(enet.crc32([Buffer.from("1234"), Buffer.from("56789")])).toBe(
+      enet.crc32([Buffer.from(CHECK_INPUT)]),
+    );
+  });
+
+  it("computes the CRC-32 in network byte order", () => {
+    expect.hasAssertions();
+    expect(enet.crc32([Buffer.from(CHECK_INPUT)])).toBe(CHECK_VALUE);
   });
 });
 

@@ -14,7 +14,7 @@ import {
   withEnet,
   withHosts,
 } from "./fixtures.js";
-import type { IENetHost, IENetPacket } from "./index.js";
+import type { ENetChecksumCallback, IENetHost, IENetPacket } from "./index.js";
 import { ENET_VERSION, ENetEventType, enet } from "./index.js";
 // oxlint-disable-next-line import/no-namespace -- the mock replaces one binding and keeps the others
 import * as native from "./native/index.js";
@@ -23,6 +23,7 @@ vi.setConfig({ testTimeout: 10_000 });
 
 const PORT = 9106;
 const NO_SLOTS = 0;
+const ONE_SLOT = 1;
 const INITIALIZE_FAILURE = -1;
 const NOTHING_FREED = 0;
 const FIRST_ATTEMPT = 0;
@@ -34,6 +35,9 @@ const MESSAGE = "freed message";
 const address = localAddress(PORT);
 
 const callbackSlots = (): number => koffi.stats().callbacks;
+
+const checksumOne: ENetChecksumCallback = (buffers) => enet.crc32(buffers);
+const checksumTwo: ENetChecksumCallback = (buffers) => enet.crc32(buffers);
 
 const failingInitializeWithCallbacks: typeof native.enet_initialize_with_callbacks =
   Object.assign((): number => INITIALIZE_FAILURE, {
@@ -64,6 +68,42 @@ const serviceUntilFreed = (
     enet.host.service(host, SERVICE_TIMEOUT_MS);
   }
 };
+
+describe("checksum callbacks", () => {
+  it("hold one callback slot per host until replaced, cleared or destroyed", () => {
+    expect.hasAssertions();
+
+    withEnet(() => {
+      const host = createClient();
+      const base = callbackSlots();
+      const assignments = [
+        checksumOne,
+        checksumTwo,
+        enet.crc32,
+        checksumOne,
+        null,
+        checksumOne,
+      ] as const;
+      const slots = assignments.map((checksum) => {
+        host.checksum = checksum;
+
+        return callbackSlots() - base;
+      });
+
+      enet.host.destroy(host);
+
+      expect([...slots, callbackSlots() - base]).toStrictEqual([
+        ONE_SLOT,
+        ONE_SLOT,
+        NO_SLOTS,
+        ONE_SLOT,
+        NO_SLOTS,
+        ONE_SLOT,
+        NO_SLOTS,
+      ]);
+    });
+  });
+});
 
 describe("packet free callbacks", () => {
   it("run inside service once the remote host acknowledges the packet", () => {
