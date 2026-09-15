@@ -20,6 +20,7 @@ const enet_packet_resize: KoffiFunc<
   (packet: NativePointer<"ENetPacket">, dataLength: number) => number
 > = lib.func("int enet_packet_resize(ENetPacket *packet, size_t dataLength)");
 // Declared extern rather than ENET_API in 1.2.5, but its ChangeLog tells users to set host->checksum to it
+// A Windows DLL built with ENET_DLL exports only ENET_API functions, so enet-js can't load against one
 const enet_crc32: KoffiFunc<
   (buffers: readonly NativeBuffer[], bufferCount: number) => number
 > = lib.func(

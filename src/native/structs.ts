@@ -5,6 +5,7 @@ import koffi from "koffi";
 import type { ENetEventType } from "./enums.js";
 import type { NativePointer } from "./pointers.js";
 
+// Layouts and constants follow vanilla ENet: a build patched to change struct sizes makes the affected fields unreliable
 // ENET_PEER_RELIABLE_WINDOWS in enet.h
 const ENET_PEER_RELIABLE_WINDOWS = 16;
 
@@ -55,6 +56,8 @@ const enetUint8: TypeObject = koffi.types.uint8;
 const enetUint16: TypeObject = koffi.types.uint16;
 const enetUint32: TypeObject = koffi.types.uint32;
 
+// ENet 1.2.5's enet.h selects win32.h on WIN32 rather than _WIN32
+// A _MSC_VER_ typo in ENet 1.2.5's protocol.h leaves ENetProtocol unpacked under MSVC, which moves ENetHost.commands and every later field, so these declarations follow the packed layout of GCC, Clang and MinGW builds
 // On Windows ENetSocket is SOCKET, a pointer-sized integer where INVALID_SOCKET reads as -1
 const socketTypes: Platforms<string> = { win32: "intptr_t" };
 
