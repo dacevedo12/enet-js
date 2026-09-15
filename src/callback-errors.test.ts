@@ -21,6 +21,7 @@ const PORT = 9105;
 const DISCONNECT_DATA = 0;
 const MESSAGE = "queued message";
 const FREE_ERROR = "free callback failed";
+const CHECKSUM_ERROR = "checksum failed";
 const address = localAddress(PORT);
 
 // Queues a packet whose free callback throws, so a call that discards queued packets runs it
@@ -72,6 +73,24 @@ describe("peer calls that discard queued packets", () => {
       });
     },
   );
+});
+
+describe("peer calls that send a disconnect", () => {
+  it("disconnectLater rethrows an error from the checksum of the disconnect it sends", () => {
+    expect.hasAssertions();
+
+    withClient((client) => {
+      const peer = connectPeer(client, address);
+
+      client.checksum = (): never => {
+        throw new Error(CHECKSUM_ERROR);
+      };
+
+      expect(() => {
+        enet.peer.disconnectLater(peer, DISCONNECT_DATA);
+      }).toThrow(CHECKSUM_ERROR);
+    });
+  });
 });
 
 describe("host calls that send packets", () => {
