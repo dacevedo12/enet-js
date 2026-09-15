@@ -53,8 +53,8 @@ which is excluded from the build and coverage.
 
 The package exports a single `enet` object that mirrors ENet's C API:
 `enet_<group>_<name>` becomes `enet.<group>.<camelCaseName>`, and functions
-without a group (`initialize`, `initializeWithCallbacks`, `deinitialize`) sit
-on `enet` itself.
+without a group (`initialize`, `initializeWithCallbacks`, `deinitialize`,
+`crc32`) sit on `enet` itself.
 
 - Groups and their modules: `address` (`address.ts`), `host` (`host.ts`, with
   fields in `host-handle.ts`), `packet` (`packet.ts`), `peer` (`peer.ts`),
@@ -80,6 +80,9 @@ on `enet` itself.
   Koffi 3 pointers are plain BigInts that Koffi doesn't type-check
 - A new binding must be removed from the `unbound` list in
   `src/native.coverage.test.ts`
+- `enet_crc32` is `extern`, not `ENET_API`, in 1.2.5. It is bound because the
+  1.2.2 ChangeLog tells users to set `host->checksum` to it, and the coverage
+  test lists it as a documented exception
 
 ### Handles
 
@@ -112,6 +115,7 @@ expose pointers or Koffi.
   `koffi.register`, never as transient functions. Clear the C field before
   unregistering, since Koffi reuses freed slots, and share one registered
   callback per kind when ENet passes a key (the packet for free callbacks).
+  A JS checksum gets its own registration per host, since ENet passes no key
   `initializeWithCallbacks` registers `noMemory` and `rand` for the rest of the
   process, or releases them when ENet refuses the callbacks
 - Every JS function ENet calls runs inside `guardCallback` or

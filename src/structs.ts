@@ -9,6 +9,9 @@ interface IENetAddress {
   readonly port: number;
 }
 
+// Computes the checksum of the datagram held in buffers, like ENetChecksumCallback
+type ENetChecksumCallback = (buffers: readonly Buffer[]) => number;
+
 type ENetPacketFreeCallback = (packet: IENetPacket) => void;
 
 // Like ENetCallbacks: malloc and free can't be JS, which has no native memory to hand out
@@ -22,6 +25,7 @@ interface IENetHost {
   readonly [nativePointer]: NativePointer<"ENetHost">;
   readonly address: IENetAddress;
   readonly channelLimit: number;
+  checksum: ENetChecksumCallback | null;
   readonly incomingBandwidth: number;
   readonly outgoingBandwidth: number;
   readonly peerCount: number;
@@ -100,6 +104,7 @@ interface IENetSocketReceive {
 }
 
 export type {
+  ENetChecksumCallback,
   ENetPacketFreeCallback,
   IENetAddress,
   IENetCallbacks,

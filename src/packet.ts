@@ -1,10 +1,12 @@
 import koffi from "koffi";
 
+import { toNativeBuffers } from "./buffers.js";
 import { afterCallbacks, guardVoidCallback } from "./callbacks.js";
 import { ENetPacketFlag } from "./enums.js";
 import {
   enetPacket,
   enetPacketFreeCallback,
+  enet_crc32,
   enet_packet_create,
   enet_packet_destroy,
   enet_packet_resize,
@@ -102,4 +104,7 @@ const destroy = (packet: IENetPacket): void => {
 const resize = (packet: IENetPacket, dataLength: number): number =>
   afterCallbacks(() => enet_packet_resize(packet[nativePointer], dataLength));
 
-export { create, destroy, resize, wrapPacket };
+const crc32 = (buffers: readonly Buffer[]): number =>
+  enet_crc32(toNativeBuffers(buffers), buffers.length);
+
+export { crc32, create, destroy, resize, wrapPacket };

@@ -12,6 +12,7 @@ import {
   service,
 } from "./host.js";
 import {
+  crc32,
   create as createPacket,
   destroy as destroyPacket,
   resize,
@@ -47,6 +48,7 @@ interface IENet {
     readonly getHostIp: typeof getHostIp;
     readonly setHost: typeof setHost;
   };
+  readonly crc32: typeof crc32;
   readonly deinitialize: typeof deinitialize;
   readonly host: {
     readonly bandwidthLimit: typeof bandwidthLimit;
@@ -99,6 +101,7 @@ interface IENet {
 
 const enet: IENet = {
   address: { getHost, getHostIp, setHost },
+  crc32,
   deinitialize,
   host: {
     bandwidthLimit,

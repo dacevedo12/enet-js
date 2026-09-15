@@ -73,6 +73,7 @@ describe("host fields", () => {
     withHost((host) => {
       expect(host).toMatchObject({
         channelLimit: ENET_PROTOCOL_MAXIMUM_CHANNEL_COUNT,
+        checksum: null,
         incomingBandwidth: INCOMING_BANDWIDTH,
         outgoingBandwidth: OUTGOING_BANDWIDTH,
         peerCount: PEER_COUNT,
