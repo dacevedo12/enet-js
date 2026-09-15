@@ -37,8 +37,9 @@ tool for a job another tool already does.
 
 ## Checks
 
-`nix run .#enet-lint` and `nix run .#enet-test` run the same checks as CI, so a
-local pass is a remote pass.
+`nix run .#enet-lint`, `nix run .#enet-test`, `nix run .#enet-test-bun` and
+`nix run .#enet-test-deno` run the same checks as CI, so a local pass is a
+remote pass.
 
 Without Nix, `npm run lint-code` and `npm run lint-docs` lint the code and the
 documentation. `npm test` needs `ENET_LIB_PATH` set to the shared library of the
