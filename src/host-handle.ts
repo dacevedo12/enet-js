@@ -158,6 +158,7 @@ const hostPrototype: HandlePrototype<IENetHost> = {
       "void *",
       checksumAddress(pointer, handler),
     );
+    // ENet must stop pointing at the old callback before its Koffi slot is freed, since Koffi reuses freed slots
     unregisterChecksum(previous);
   },
   get duplicatePeers(): number {

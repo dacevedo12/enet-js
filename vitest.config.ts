@@ -9,6 +9,7 @@ export default defineConfig({
       include: ["src/**/*.ts"],
       provider: "v8",
       reporter: ["html", "text"],
+      thresholds: { 100: true },
     },
     include: ["src/**/*.test.ts"],
   },

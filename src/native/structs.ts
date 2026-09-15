@@ -5,6 +5,7 @@ import koffi from "koffi";
 import type { ENetEventType } from "./enums.js";
 import type { NativePointer } from "./pointers.js";
 
+// Layouts and constants follow vanilla ENet: a build patched to change struct sizes makes the affected fields unreliable
 // ENET_PEER_RELIABLE_WINDOWS in enet.h
 const ENET_PEER_RELIABLE_WINDOWS = 16;
 
