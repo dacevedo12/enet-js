@@ -92,7 +92,9 @@ without a group (`initialize`, `initializeWithCallbacks`, `deinitialize`,
   `src/native.coverage.test.ts`
 - `enet_crc32` is `extern`, not `ENET_API`, in 1.2.5. It is bound because the
   1.2.2 ChangeLog tells users to set `host->checksum` to it, and the coverage
-  test lists it as a documented exception
+  test lists it as a documented exception. A 1.2.5 Windows DLL built with
+  `ENET_DLL` exports only `ENET_API` functions, so enet-js can't resolve
+  `enet_crc32` and fails to load against such a build
 
 ### Handles
 
@@ -125,7 +127,7 @@ expose pointers or Koffi.
   `koffi.register`, never as transient functions. Clear the C field before
   unregistering, since Koffi reuses freed slots, and share one registered
   callback per kind when ENet passes a key (the packet for free callbacks).
-  A JS checksum gets its own registration per host, since ENet passes no key
+  A JS checksum gets its own registration per host, since ENet passes no key.
   `initializeWithCallbacks` registers `noMemory` and `rand` for the rest of the
   process, or releases them when ENet refuses the callbacks
 - Every JS function ENet calls runs inside `guardCallback` or
