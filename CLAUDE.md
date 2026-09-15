@@ -81,6 +81,9 @@ without a group (`initialize`, `initializeWithCallbacks`, `deinitialize`,
     MSVC, which moves `ENetHost.commands` and every field after it, including
     the writable `total*` counters. enet-js declares the packed layout that
     GCC, Clang and MinGW builds use
+- Layouts and constants follow vanilla ENet 1.2.5. Patched builds that change
+  struct sizes make the affected fields unreliable, so don't add configurable
+  layouts or layout checks for them
 - `native/callbacks.ts` - Koffi prototypes for ENet's callback types
 - `native/enums.ts` - ENet enum values, re-exported by `src/enums.ts`
 - `native/pointers.ts` - `NativePointer`, the per-struct pointer type, since
