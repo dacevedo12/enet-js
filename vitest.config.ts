@@ -11,6 +11,7 @@ export default defineConfig({
       reporter: ["html", "text"],
       thresholds: { 100: true },
     },
+    execArgv: ["--expose-gc"],
     include: ["src/**/*.test.ts"],
   },
 });
