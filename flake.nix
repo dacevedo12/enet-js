@@ -33,6 +33,17 @@
           _module.args.pkgs = import inputs.nixpkgs {
             inherit system;
             config.allowUnfree = true;
+            overlays = [
+              (final: prev: {
+                enet = prev.enet.overrideAttrs {
+                  version = "1.2.5";
+                  src = final.fetchurl {
+                    url = "http://enet.bespin.org/download/enet-1.2.5.tar.gz";
+                    sha256 = "sha256-13529yxEW1DP6Cd70QezJKAppL1TdBaFE6owLe7sMCs=";
+                  };
+                };
+              })
+            ];
           };
 
           devShells = import ./nix/shell { inherit pkgs self'; };

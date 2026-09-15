@@ -18,7 +18,8 @@ The `<major>.<minor>` version matches the supported enet version
 npm install --save-exact enet-js
 ```
 
-**Note:** This package requires Node.js 24 or later.
+**Note:** This package requires Node.js 24 or later. It also runs on
+[Bun](https://bun.com/) and [Deno](https://deno.com/).
 
 Before importing enet-js, set the `ENET_LIB_PATH` environment variable to the
 full path of the ENet shared library (including extension, e.g. `.dll`,
@@ -32,6 +33,14 @@ Or set it when running your application:
 
 ```sh
 ENET_LIB_PATH=/path/to/libenet.0.dylib node your-app.js
+```
+
+Deno needs permission to load the Koffi native module and to read
+`ENET_LIB_PATH`:
+
+```sh
+ENET_LIB_PATH=/path/to/libenet.0.dylib \
+  deno run --allow-ffi --allow-env=ENET_LIB_PATH your-app.js
 ```
 
 To get the dynamic library, compile enet following the instructions at
