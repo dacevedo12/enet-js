@@ -106,7 +106,17 @@ const fromFdSet = (fdSet: Buffer | null, sockets: Set<number> | null): void => {
   }
 };
 
-// Like enet_socketset_select: the sets hold sockets, and select removes the ones that aren't ready
+/**
+ * Like enet_socketset_select, with each socket set as a `Set` of sockets.
+ * Like `fd_set`s, the sets are updated in place, keeping only the sockets
+ * that are ready.
+ *
+ * @param maxSocket - The highest socket in either set.
+ * @param readSet - The sockets to check for reading, or `null`.
+ * @param writeSet - The sockets to check for writing, or `null`.
+ * @param timeout - How long to wait, in milliseconds.
+ * @returns The number of ready sockets, 0 on timeout, or -1 on failure.
+ */
 const select = (
   maxSocket: number,
   readSet: Set<number> | null,

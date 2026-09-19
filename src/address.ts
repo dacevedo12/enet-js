@@ -49,7 +49,14 @@ const readHostName = (status: number, hostName: Buffer): string | null =>
     hostName.toString("utf8", START, hostName.indexOf(NUL)),
   );
 
-// Like enet_address_set_host_ip, returning the updated address instead of filling it in
+/**
+ * Like enet_address_set_host_ip, returning an updated copy of `address`
+ * instead of changing it.
+ *
+ * @param address - The address to copy.
+ * @param hostName - An IPv4 address in dotted-decimal notation.
+ * @returns The copy with that host, or `null` on failure.
+ */
 const setHostIp = (
   address: IENetAddress,
   hostName: string,
@@ -61,7 +68,14 @@ const setHostIp = (
   );
 };
 
-// Like enet_address_set_host, returning the updated address instead of filling it in
+/**
+ * Like enet_address_set_host, returning an updated copy of `address` instead
+ * of changing it.
+ *
+ * @param address - The address to copy.
+ * @param hostName - The host name to resolve.
+ * @returns The copy with the resolved host, or `null` on failure.
+ */
 const setHost = (
   address: IENetAddress,
   hostName: string,
@@ -73,6 +87,13 @@ const setHost = (
   );
 };
 
+/**
+ * Like enet_address_get_host_ip, returning the host instead of writing it
+ * into a buffer.
+ *
+ * @param address - The address whose host to format.
+ * @returns The host in dotted-decimal notation, or `null` on failure.
+ */
 const getHostIp = (address: IENetAddress): string | null => {
   const hostName = Buffer.alloc(HOST_IP_LENGTH);
 
@@ -86,6 +107,14 @@ const getHostIp = (address: IENetAddress): string | null => {
   );
 };
 
+/**
+ * Like enet_address_get_host, returning the name instead of writing it into a
+ * buffer.
+ *
+ * @param address - The address whose host to look up.
+ * @returns The host's name, or its IP address when it has none, or `null` on
+ * failure.
+ */
 const getHost = (address: IENetAddress): string | null => {
   const hostName = Buffer.alloc(HOST_NAME_LENGTH);
 

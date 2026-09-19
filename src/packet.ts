@@ -86,6 +86,18 @@ const wrapPacket = (pointer: NativePointer<"ENetPacket">): IENetPacket =>
     userData: null,
   });
 
+/**
+ * Like enet_packet_create, taking the length from `data`.
+ *
+ * With `ENetPacketFlag.noAllocate`, the packet points into `data` instead of
+ * copying it. Keep `data` referenced until the packet is freed, which its
+ * `freeCallback` reports, since the garbage collector would otherwise free
+ * memory ENet still uses.
+ *
+ * @param data - The packet's contents.
+ * @param flags - Bitwise OR of `ENetPacketFlag` values.
+ * @returns The new packet, or `null` if ENet couldn't allocate it.
+ */
 const create = (
   data: Buffer,
   flags: number = ENetPacketFlag.none,
@@ -103,6 +115,15 @@ const destroy = (packet: IENetPacket): void => {
   });
 };
 
+/**
+ * Like enet_packet_resize. Growing a packet moves its data unless it has
+ * `ENetPacketFlag.noAllocate`, so read `packet.data` again afterwards: a
+ * Buffer read before the call can point at freed memory.
+ *
+ * @param packet - The packet to resize.
+ * @param dataLength - The new length, in bytes.
+ * @returns 0 on success, or -1 if ENet couldn't allocate the new length.
+ */
 const resize = (packet: IENetPacket, dataLength: number): number =>
   afterCallbacks(() => enet_packet_resize(packet[nativePointer], dataLength));
 

@@ -132,6 +132,12 @@ const create = (
   return pointer === null ? null : wrapHost(pointer);
 };
 
+/**
+ * Like enet_host_destroy, also destroying the packet of a receive event the
+ * host was keeping for its next `service` or `checkEvents`.
+ *
+ * @param host - The host to destroy.
+ */
 const destroy = (host: IENetHost): void => {
   const pointer = host[nativePointer];
   const pending = takePendingEvent(pointer);
@@ -166,13 +172,34 @@ const connect = (
   return pointer === null ? null : peerOf(host[nativePointer], pointer);
 };
 
-// Like enet_host_check_events, returning the event instead of filling it in
+/**
+ * Like enet_host_check_events, returning the event instead of filling it in.
+ *
+ * A `none` event means that no event was waiting, or that ENet failed. If a
+ * callback throws, the error is rethrown once ENet returns, and the host's
+ * next `checkEvents` or `service` returns any event ENet had already taken,
+ * instead of calling ENet.
+ *
+ * @param host - The host to check for events.
+ * @returns The next waiting event, or a `none` event.
+ */
 const checkEvents = (host: IENetHost): IENetEvent =>
   dispatchEvent(host, (event) => {
     enet_host_check_events(host[nativePointer], event);
   });
 
-// Like enet_host_service, returning the event instead of filling it in
+/**
+ * Like enet_host_service, returning the event instead of filling it in.
+ *
+ * A `none` event means that no event occurred before the timeout, or that
+ * ENet failed. If a callback throws, the error is rethrown once ENet returns,
+ * and the host's next `service` or `checkEvents` returns any event ENet had
+ * already taken, instead of calling ENet.
+ *
+ * @param host - The host to service.
+ * @param timeout - How long to wait for an event, in milliseconds.
+ * @returns The event that occurred, or a `none` event.
+ */
 const service = (host: IENetHost, timeout: number): IENetEvent =>
   dispatchEvent(host, (event) => {
     enet_host_service(host[nativePointer], event, timeout);
