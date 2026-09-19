@@ -29,6 +29,14 @@ between the lines unless the ENet versions force them apart.
 
 Pull requests are merged by rebase, so history stays linear.
 
+## Releases
+
+A release bumps the version in a pull request. Once it merges, pushing the tag
+`v<version>` on the merged commit stages the package on npm through trusted
+publishing, with no token. It goes live when a maintainer approves it on
+npmjs.com with 2FA, under `latest` for the default branch's line and
+`<major>.<minor>x` for older lines.
+
 ## Dependencies
 
 Runtime dependencies take a version range, so an application can share them
