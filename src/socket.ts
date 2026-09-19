@@ -36,7 +36,13 @@ const bind = (socket: number, address: IENetAddress | null): number =>
 const listen = (socket: number, backlog: number): number =>
   enet_socket_listen(socket, backlog);
 
-// Like enet_socket_accept, returning the peer's address with the new socket
+/**
+ * Like enet_socket_accept, returning the peer's address with the new socket
+ * instead of filling it in.
+ *
+ * @param socket - The listening socket.
+ * @returns The new socket and the peer's address, or `null` on failure.
+ */
 const accept = (socket: number): IENetSocketAccept | null => {
   const address = emptyNativeAddress();
   const accepted = enet_socket_accept(socket, address);
@@ -61,7 +67,15 @@ const send = (
     buffers.length,
   );
 
-// Like enet_socket_receive, returning the sender's address with the result
+/**
+ * Like enet_socket_receive, returning the sender's address with the result
+ * instead of filling it in. The datagram is written into `buffers`.
+ *
+ * @param socket - The socket to receive from.
+ * @param buffers - Where to write the datagram.
+ * @returns ENet's result, with the sender's address if it received anything,
+ * or `null` otherwise.
+ */
 const receive = (
   socket: number,
   buffers: readonly Buffer[],
@@ -81,7 +95,16 @@ const receive = (
   };
 };
 
-// Like enet_socket_wait, returning the ready conditions instead of updating them
+/**
+ * Like enet_socket_wait, returning the conditions that are ready instead of
+ * updating `condition`.
+ *
+ * @param socket - The socket to wait on.
+ * @param condition - Bitwise OR of the `ENetSocketWait` conditions to wait
+ * for.
+ * @param timeout - How long to wait, in milliseconds.
+ * @returns Bitwise OR of the conditions that are ready, or `null` on failure.
+ */
 const wait = (
   socket: number,
   condition: number,
