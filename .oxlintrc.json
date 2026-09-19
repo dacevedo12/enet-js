@@ -47,6 +47,8 @@
     "vitest/prefer-to-be-truthy": "off", // toBe(true) is stricter than toBeTruthy()
 
     // Owned by another tool
+    "jsdoc/require-param-type": "off", // TypeScript owns parameter types
+    "jsdoc/require-returns-type": "off", // TypeScript owns return types
     "no-redeclare": "off", // tsc reports redeclarations; this rule misreads const and type pairs
     "require-await": "off", // superseded by the type-aware typescript/require-await
     "sort-imports": ["error", { "ignoreDeclarationSort": true }], // oxfmt orders import declarations

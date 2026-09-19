@@ -41,7 +41,13 @@ const create = (type: ENetSocketType): number => enet_socket_create(type);
 const bind = (socket: number, address: IENetAddress | null): number =>
   enet_socket_bind(socket, toNativeAddressOrNull(address));
 
-// Like enet_socket_get_address, returning the address instead of filling it in
+/**
+ * Like enet_socket_get_address, returning the address instead of filling it
+ * in.
+ *
+ * @param socket - The socket whose address to get.
+ * @returns The socket's address, or `null` on failure.
+ */
 const getAddress = (socket: number): IENetAddress | null => {
   const address = emptyNativeAddress();
 
@@ -53,7 +59,13 @@ const getAddress = (socket: number): IENetAddress | null => {
 const listen = (socket: number, backlog: number): number =>
   enet_socket_listen(socket, backlog);
 
-// Like enet_socket_accept, returning the peer's address with the new socket
+/**
+ * Like enet_socket_accept, returning the peer's address with the new socket
+ * instead of filling it in.
+ *
+ * @param socket - The listening socket.
+ * @returns The new socket and the peer's address, or `null` on failure.
+ */
 const accept = (socket: number): IENetSocketAccept | null => {
   const address = emptyNativeAddress();
   const accepted = enet_socket_accept(socket, address);
@@ -78,7 +90,15 @@ const send = (
     buffers.length,
   );
 
-// Like enet_socket_receive, returning the sender's address with the result
+/**
+ * Like enet_socket_receive, returning the sender's address with the result
+ * instead of filling it in. The datagram is written into `buffers`.
+ *
+ * @param socket - The socket to receive from.
+ * @param buffers - Where to write the datagram.
+ * @returns ENet's result, with the sender's address if it received anything,
+ * or `null` otherwise.
+ */
 const receive = (
   socket: number,
   buffers: readonly Buffer[],
@@ -98,7 +118,16 @@ const receive = (
   };
 };
 
-// Like enet_socket_wait, returning the ready conditions instead of updating them
+/**
+ * Like enet_socket_wait, returning the conditions that are ready instead of
+ * updating `condition`.
+ *
+ * @param socket - The socket to wait on.
+ * @param condition - Bitwise OR of the `ENetSocketWait` conditions to wait
+ * for.
+ * @param timeout - How long to wait, in milliseconds.
+ * @returns Bitwise OR of the conditions that are ready, or `null` on failure.
+ */
 const wait = (
   socket: number,
   condition: number,
@@ -119,7 +148,13 @@ const setOption = (
   value: number,
 ): number => enet_socket_set_option(socket, option, value);
 
-// Like enet_socket_get_option, returning the value instead of filling it in
+/**
+ * Like enet_socket_get_option, returning the value instead of filling it in.
+ *
+ * @param socket - The socket whose option to read.
+ * @param option - The option to read.
+ * @returns The option's value, or `null` on failure.
+ */
 const getOption = (socket: number, option: ENetSocketOption): number | null => {
   const values: [number] = [UNSET];
 

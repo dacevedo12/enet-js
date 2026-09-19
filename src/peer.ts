@@ -96,7 +96,13 @@ const send = (
     enet_peer_send(peer[nativePointer], channelID, packet[nativePointer]),
   );
 
-// Like enet_peer_receive, returning the channelID out-parameter with the packet
+/**
+ * Like enet_peer_receive, returning the channel ID with the packet instead of
+ * filling it in.
+ *
+ * @param peer - The peer to dequeue a packet from.
+ * @returns The packet and its channel ID, or `null` if no packet was waiting.
+ */
 const receive = (peer: IENetPeer): IENetPeerReceive | null => {
   const channelID: [number] = [NO_CHANNEL];
   const packet = enet_peer_receive(peer[nativePointer], channelID);
