@@ -9,15 +9,40 @@ interface IENetAddress {
   readonly port: number;
 }
 
-// Computes the checksum of the datagram held in buffers, like ENetChecksumCallback
+/**
+ * Computes the checksum of the datagram held in `buffers`, like
+ * ENetChecksumCallback. The buffers are views of ENet's memory, valid only
+ * during the call.
+ *
+ * If it throws, or returns something other than a number, ENet gets 0
+ * instead, and the error is rethrown once ENet returns, unless another
+ * callback threw first.
+ */
 type ENetChecksumCallback = (buffers: readonly Buffer[]) => number;
 
+/**
+ * Called when ENet frees the packet, like ENetPacketFreeCallback. If it
+ * throws, the error is rethrown once ENet returns, unless another callback
+ * threw first.
+ */
 type ENetPacketFreeCallback = (packet: IENetPacket) => void;
 
-// Like ENetCallbacks: malloc and free can't be JS, which has no native memory to hand out
+/**
+ * Like ENetCallbacks, without `malloc` and `free`, since JS has no native
+ * memory to hand out.
+ */
 interface IENetCallbacks {
+  /**
+   * Called when ENet fails to allocate memory. If it throws, the error is
+   * rethrown once ENet returns, unless another callback threw first.
+   */
   readonly noMemory?: () => void;
-  // Called by enet.host.connect for each connection's session ID
+  /**
+   * Called by `enet.host.connect` for each connection's session ID. If it
+   * throws, or returns something other than a number, ENet gets 0 instead, and
+   * the error is rethrown once ENet returns, unless another callback threw
+   * first.
+   */
   readonly rand?: () => number;
 }
 
@@ -25,6 +50,10 @@ interface IENetHost {
   readonly [nativePointer]: NativePointer<"ENetHost">;
   readonly address: IENetAddress;
   readonly channelLimit: number;
+  /**
+   * The host's checksum callback, or `null` for none. Assigning `enet.crc32`
+   * sets ENet's own CRC32, which runs without calling into JS.
+   */
   checksum: ENetChecksumCallback | null;
   readonly incomingBandwidth: number;
   readonly outgoingBandwidth: number;
@@ -38,10 +67,13 @@ interface IENetHost {
 
 interface IENetPacket {
   readonly [nativePointer]: NativePointer<"ENetPacket">;
-  // A view of the packet's memory, like packet->data in C
+  /**
+   * A view of the packet's memory, like `packet->data` in C. Read it again
+   * after growing the packet with `enet.packet.resize`, which can move it.
+   */
   readonly data: Buffer;
   readonly dataLength: number;
-  // Bitwise OR of ENetPacketFlag values
+  /** Bitwise OR of `ENetPacketFlag` values. */
   readonly flags: number;
   freeCallback: ENetPacketFreeCallback | null;
   readonly referenceCount: number;
@@ -51,7 +83,7 @@ interface IENetPeer {
   readonly [nativePointer]: NativePointer<"ENetPeer">;
   readonly address: IENetAddress;
   readonly channelCount: number;
-  // Application data, like peer->data in C
+  /** Application data, like `peer->data` in C. */
   data: unknown;
   readonly incomingBandwidth: number;
   readonly mtu: number;
@@ -85,19 +117,22 @@ interface IENetEventWithPeer extends IENetEventBase {
 
 type IENetEvent = IENetEventEmpty | IENetEventWithPacket | IENetEventWithPeer;
 
-// What enet_peer_receive returns along with its channelID out-parameter
+/** What enet_peer_receive returns, with its `channelID` out-parameter. */
 interface IENetPeerReceive {
   readonly channelID: number;
   readonly packet: IENetPacket;
 }
 
-// What enet_socket_accept returns along with its address out-parameter
+/** What enet_socket_accept returns, with its `address` out-parameter. */
 interface IENetSocketAccept {
   readonly address: IENetAddress;
   readonly socket: number;
 }
 
-// What enet_socket_receive returns along with its address out-parameter, null when nothing was received
+/**
+ * What enet_socket_receive returns, with its `address` out-parameter, which
+ * is `null` when nothing was received.
+ */
 interface IENetSocketReceive {
   readonly address: IENetAddress | null;
   readonly result: number;

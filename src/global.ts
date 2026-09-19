@@ -20,7 +20,16 @@ const deinitialize = (): void => {
 
 const initialize = (): number => enet_initialize();
 
-// ENet keeps its own malloc and free, and keeps noMemory and rand for the rest of the process once it accepts the callbacks
+/**
+ * Like enet_initialize_with_callbacks, where only `noMemory` and `rand` can be
+ * set, so ENet keeps its own `malloc` and `free`. Once ENet accepts the
+ * callbacks, it keeps them for the rest of the process.
+ *
+ * @param version - The ENet version the program was written against, from
+ * `ENET_VERSION_CREATE`.
+ * @param inits - The callbacks.
+ * @returns 0 on success, or -1 on failure.
+ */
 const initializeWithCallbacks = (
   version: number,
   inits: IENetCallbacks,
