@@ -1,0 +1,37 @@
+name: Mirror
+
+on:
+  push:
+    branches:
+      - "1.2"
+      - "1.3"
+    tags:
+      - "*"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mirror
+
+jobs:
+  gitlab:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Push the release branches and tags to GitLab
+        env:
+          GITLAB_DEPLOY_KEY: ${{ secrets.GITLAB_DEPLOY_KEY }}
+        run: |
+          printf '%s\n' "$GITLAB_DEPLOY_KEY" > "$RUNNER_TEMP/gitlab-key"
+          chmod 600 "$RUNNER_TEMP/gitlab-key"
+          # gitlab.com's published ED25519 host key
+          echo "gitlab.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAfuCHKVTjquxvt6CM6tdG4SLp1Btn/nOeHHE5UOzRdf" > "$RUNNER_TEMP/known_hosts"
+          export GIT_SSH_COMMAND="ssh -i $RUNNER_TEMP/gitlab-key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$RUNNER_TEMP/known_hosts"
+          git push git@gitlab.com:dacevedo/enet-js.git \
+            refs/remotes/origin/1.2:refs/heads/1.2 \
+            refs/remotes/origin/1.3:refs/heads/1.3 \
+            "refs/tags/*:refs/tags/*"
