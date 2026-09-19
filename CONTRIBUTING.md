@@ -9,6 +9,9 @@ a place where enet-js behaves differently from ENet. Open a pull request to fix
 one. Both count, and an issue that names a problem precisely is worth more than
 a guess at the fix.
 
+Both go to [GitHub](https://github.com/dacevedo12/enet-js). The GitLab repository
+only mirrors it.
+
 ## What enet-js is
 
 A thin layer over ENet's C API. ENet's documentation describes enet-js, and the
